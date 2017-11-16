@@ -1,4 +1,5 @@
 TODO:
 
  - Be able to read in leaves for root_numpy
+    - add way of dealing with vectors in dfs (maybe remove them)
 

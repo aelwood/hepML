@@ -151,6 +151,6 @@ export PKG_CONFIG_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/mysql/5.7.11
 export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/mysql/5.7.11/x86_64-slc6-gcc49-opt/lib/plugin:$LD_LIBRARY_PATH";
 export ROOT_HOME="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/ROOT/v6-07-07-aliceml/x86_64-slc6-gcc49-opt";
 # cd "/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/ROOT/v6-07-07-aliceml/x86_64-slc6-gcc49-opt"
-# test -s $ROOT_HOME/bin/thisroot.sh && source $ROOT_HOME/bin/thisroot.sh
+test -s $ROOT_HOME/bin/thisroot.sh && source $ROOT_HOME/bin/thisroot.sh
 # cd - 1>/dev/null # from /cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/ROOT/v6-07-07-aliceml/x86_64-slc6-gcc49-opt
 export PATH=$HOME/.local/bin:$PATH
