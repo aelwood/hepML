@@ -39,6 +39,11 @@ export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/pandas/0.16.
 export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/pandas/0.16.1/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
 export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/root_numpy/4.5.1/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
 export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/root_numpy/4.5.1/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
+export PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/matplotlib/1.5.1/x86_64-slc6-gcc49-opt/bin:$PATH";
+export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/matplotlib/1.5.1/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
+export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/matplotlib/1.5.1/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
+export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/messaging/1.0/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
+export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/messaging/1.0/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
 export PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/Python/2.7.10/x86_64-slc6-gcc49-opt/bin:$PATH";
 export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/Python/2.7.10/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
 export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/Python/2.7.10/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
@@ -47,18 +52,57 @@ export PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/sqlite/3110100/x86_64-s
 export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/sqlite/3110100/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
 export PKG_CONFIG_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/sqlite/3110100/x86_64-slc6-gcc49-opt/lib/pkgconfig:$PKG_CONFIG_PATH";
 export PYTHON_HOME="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/Python/2.7.10/x86_64-slc6-gcc49-opt";
-cd "/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/Python/2.7.10/x86_64-slc6-gcc49-opt"
-export PYTHONHOME="${PYTHON_HOME}"
-cd - 1>/dev/null # from /cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/Python/2.7.10/x86_64-slc6-gcc49-opt
+# cd "/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/Python/2.7.10/x86_64-slc6-gcc49-opt"
+# export PYTHONHOME="${PYTHON_HOME}"
+# cd - 1>/dev/null # from /cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/Python/2.7.10/x86_64-slc6-g# found package tornado-5dc2b
+# found package Python-806f9
+# found package backports-f16df
+# found package Python-806f9
+# found package setuptools-0f487
+# found package certifi-530c8
+# found package Python-806f9
+# found package setuptools-0f487
+# found package setuptools-0f487
+# found package distribute-4f97f
+# found package Python-806f9
+# found package setuptools-0f487
+# found package setuptools-0f487
+# found package mock-bdfc3
+# found package Python-806f9
+# found package setuptools-0f487cc49-opt
+export PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/setuptools/20.1.1/x86_64-slc6-gcc49-opt/bin:$PATH";
+export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/setuptools/20.1.1/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
+export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/setuptools/20.1.1/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
+export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/tornado/4.0.2/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
+export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/tornado/4.0.2/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
+export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/backports/3.4.0.2/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
+export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/backports/3.4.0.2/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
+export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/certifi/14.05.14/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
+export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/certifi/14.05.14/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
+export PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/distribute/0.6.49/x86_64-slc6-gcc49-opt/bin:$PATH";
+export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/distribute/0.6.49/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
+export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/distribute/0.6.49/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
+export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/mock/0.8.0/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
+export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/mock/0.8.0/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
+#cd - 1>/dev/null # from /cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/Python/2.7.10/x86_64-slc6-gcc49-opt
 export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/pytz/2015.4/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
 export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/pytz/2015.4/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
 export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/python_dateutil/2.4.0/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
 export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/python_dateutil/2.4.0/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
 export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/six/1.9.0/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
 export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/six/1.9.0/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
+export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/pytz/2015.4/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
+export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/pytz/2015.4/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
 export PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/numpy/1.11.0/x86_64-slc6-gcc49-opt/bin:$PATH";
 export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/numpy/1.11.0/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
 export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/numpy/1.11.0/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
+export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/pyparsing/2.0.3/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
+export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/pyparsing/2.0.3/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
+export PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/nose/1.1.2/x86_64-slc6-gcc49-opt/bin:$PATH";
+export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/nose/1.1.2/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
+export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/nose/1.1.2/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
+export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/cycler/0.10.0/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
+export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/cycler/0.10.0/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
 export PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/setuptools/20.1.1/x86_64-slc6-gcc49-opt/bin:$PATH";
 export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/setuptools/20.1.1/x86_64-slc6-gcc49-opt/lib:$LD_LIBRARY_PATH";
 export PYTHONPATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/setuptools/20.1.1/x86_64-slc6-gcc49-opt/lib/python2.7/site-packages:$PYTHONPATH";
@@ -106,7 +150,7 @@ export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/mysql/5.7.11
 export PKG_CONFIG_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/mysql/5.7.11/x86_64-slc6-gcc49-opt/lib/pkgconfig:$PKG_CONFIG_PATH";
 export LD_LIBRARY_PATH="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/mysql/5.7.11/x86_64-slc6-gcc49-opt/lib/plugin:$LD_LIBRARY_PATH";
 export ROOT_HOME="/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/ROOT/v6-07-07-aliceml/x86_64-slc6-gcc49-opt";
-cd "/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/ROOT/v6-07-07-aliceml/x86_64-slc6-gcc49-opt"
-test -s $ROOT_HOME/bin/thisroot.sh && source $ROOT_HOME/bin/thisroot.sh
-cd - 1>/dev/null # from /cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/ROOT/v6-07-07-aliceml/x86_64-slc6-gcc49-opt
+# cd "/cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/ROOT/v6-07-07-aliceml/x86_64-slc6-gcc49-opt"
+# test -s $ROOT_HOME/bin/thisroot.sh && source $ROOT_HOME/bin/thisroot.sh
+# cd - 1>/dev/null # from /cvmfs/sft.cern.ch/lcg/releases/LCG_85swan2/ROOT/v6-07-07-aliceml/x86_64-slc6-gcc49-opt
 export PATH=$HOME/.local/bin:$PATH

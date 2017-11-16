@@ -1,0 +1,3 @@
+[submodule "pandasPlotting"]
+	path = pandasPlotting
+	url = git@github.com:aelwood/pandasPlotting.git
