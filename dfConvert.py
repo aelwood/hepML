@@ -13,29 +13,38 @@ def addTLorentzVectors(df,tree,branches):
     #Initialise empty arrays
     for b in branches:
         arrDict[b+'_pt'] = []
+        arrDict[b+'_px'] = []
+        arrDict[b+'_py'] = []
         arrDict[b+'_pz'] = []
         arrDict[b+'_phi'] = []
         arrDict[b+'_eta'] = []
         arrDict[b+'_m'] = []
+        arrDict[b+'_e'] = []
 
     #Loop over the tree and fill the arrays with the info from the vectors
     for i,event in enumerate(tree):
         for b in branches:
             arrDict[b+'_pt'].append( [o.Pt() for o in getattr(event,b)])
+            arrDict[b+'_px'].append( [o.Px() for o in getattr(event,b)])
+            arrDict[b+'_py'].append( [o.Py() for o in getattr(event,b)])
             arrDict[b+'_pz'].append( [o.Pz() for o in getattr(event,b)])
             arrDict[b+'_phi'].append( [o.Phi() for o in getattr(event,b)])
             arrDict[b+'_eta'].append( [o.Eta() for o in getattr(event,b)])
             arrDict[b+'_m'].append( [o.M() for o in getattr(event,b)])
+            arrDict[b+'_e'].append( [o.E() for o in getattr(event,b)])
         pass
     pass
 
     #Add the info to the data frames
     for b in branches:
         df[b+'_pt'] = arrDict[b+'_pt'] 
+        df[b+'_px'] = arrDict[b+'_px'] 
+        df[b+'_py'] = arrDict[b+'_py'] 
         df[b+'_pz'] = arrDict[b+'_pz'] 
         df[b+'_phi'] = arrDict[b+'_phi']
         df[b+'_eta'] = arrDict[b+'_eta']
         df[b+'_m'] = arrDict[b+'_m']
+        df[b+'_e'] = arrDict[b+'_e']
              
     pass
 
@@ -61,10 +70,6 @@ if __name__=='__main__':
     background = backgroundFile.Get('outtree')
     bkgdArray = convertTree(background,  signal=False,passFilePath=False,tlVectors = ['selJet','sel_lep'])
     print bkgdArray
-
-    # Save the dfs?
-    # if not os.path.exists('dfs'): os.makedirs('dfs')
-    # output='dfs'
 
     print bkgdArray['selJet_pt']
     print bkgdArray['selJet_pt'][0][0]

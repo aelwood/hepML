@@ -1,7 +1,9 @@
+import os
 from dfConvert import convertTree
 from pandasPlotting.Plotter import Plotter
 
-makePlots=True
+saveDfs=True
+makePlots=False
 exceptions=['selJetB']
 
 if __name__=='__main__':
@@ -13,8 +15,15 @@ if __name__=='__main__':
     signal = convertTree(signalFile,signal=True,passFilePath=True,tlVectors = ['selJet','sel_lep'])
     bkgd = convertTree(bkgdFile,signal=False,passFilePath=True,tlVectors = ['selJet','sel_lep'])
 
-    print "Making plots" 
+    if saveDfs:
+        print 'Saving the dataframes'
+        # Save the dfs?
+        if not os.path.exists('dfs'): os.makedirs('dfs')
+        signal.to_csv('dfs/signal.csv')
+        bkgd.to_csv('dfs/bkgd.csv')
+
     if makePlots:
+        print "Making plots" 
         signalPlotter = Plotter(signal,'testPlots/signal',exceptions=exceptions)
         bkgdPlotter = Plotter(bkgd,'testPlots/bkgd',exceptions=exceptions)
 

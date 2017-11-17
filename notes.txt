@@ -1,4 +1,4 @@
 TODO:
 
-- generalise the array unpacking in the pandas plotter
+- generalise the array unpacking in the pandas plotter (beyond the 1d hist)
 
