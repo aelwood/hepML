@@ -10,3 +10,8 @@ For convenience, if you have access to cvmfs just use:
 
 ```source lcgenv.sh```
 
+See a basic workflow in run.py. Test it with:
+
+```python run.py``` 
+
+

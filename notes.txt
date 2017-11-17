@@ -1,6 +1,4 @@
 TODO:
 
- - Be able to read in leaves for root_numpy
-    - generalise it to work for any tlorentz vectors
-    - add way of dealing with vectors in dfs to the plotter 
+- generalise the array unpacking in the pandas plotter
 

@@ -66,17 +66,20 @@ if __name__=='__main__':
     # if not os.path.exists('dfs'): os.makedirs('dfs')
     # output='dfs'
 
+    print bkgdArray['selJet_pt']
+    print bkgdArray['selJet_pt'][0][0]
+
     #Produce some hists with pandas and root to check
     if not os.path.exists('testPlots'): os.makedirs('testPlots')
 
-    # print 'Checking root and pandas make the same histograms'
-    # c = r.TCanvas()
-    # background.Draw('HT>>(100,0,3500)')
-    # c.SaveAs('testPlots/rootHT.png')
-    #
-    # bkgdArray.hist('HT',bins=range(0,3500+35,35))
-    # plt.show()
-    # plt.savefig('testPlots/pandasHT.png')
+    print 'Checking root and pandas make the same histograms'
+    c = r.TCanvas()
+    background.Draw('HT>>(100,0,3500)')
+    c.SaveAs('testPlots/rootHT.png')
+
+    bkgdArray.hist('HT',bins=range(0,3500+35,35))
+    plt.show()
+    plt.savefig('testPlots/pandasHT.png')
 
     
     print 'Checking the sum of the jets from the tlorentz vector is equal to the HT'

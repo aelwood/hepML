@@ -18,8 +18,8 @@ if __name__=='__main__':
         signalPlotter = Plotter(signal,'testPlots/signal',exceptions=exceptions)
         bkgdPlotter = Plotter(bkgd,'testPlots/bkgd',exceptions=exceptions)
 
-        signalPlotter.plotAllHists1D()
-        bkgdPlotter.plotAllHists1D()
+        signalPlotter.plotAllHists1D(withErrors=True)
+        bkgdPlotter.plotAllHists1D(withErrors=True)
         pass
 
     #Now add the relevant variables to the DFs (make gram matrix)
