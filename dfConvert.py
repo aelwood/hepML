@@ -1,18 +1,53 @@
 #Convert a signal and background root tree to a dataframe
 import os
 import ROOT as r
+from array import array
 import pandas as pd
 import matplotlib.pyplot as plt
 from root_numpy import root2array, tree2array
 
+#Add the important components of the tlorentzvectors to the dataframe
+def addTLorentzVectors(df,tree,branches):
+    nentries=tree.GetEntries()
+    arrDict = {}
+    #Initialise empty arrays
+    for b in branches:
+        arrDict[b+'_pt'] = []
+        arrDict[b+'_pz'] = []
+        arrDict[b+'_phi'] = []
+        arrDict[b+'_eta'] = []
+        arrDict[b+'_m'] = []
+
+    #Loop over the tree and fill the arrays with the info from the vectors
+    for i,event in enumerate(tree):
+        for b in branches:
+            arrDict[b+'_pt'].append( [o.Pt() for o in getattr(event,b)])
+            arrDict[b+'_pz'].append( [o.Pz() for o in getattr(event,b)])
+            arrDict[b+'_phi'].append( [o.Phi() for o in getattr(event,b)])
+            arrDict[b+'_eta'].append( [o.Eta() for o in getattr(event,b)])
+            arrDict[b+'_m'].append( [o.M() for o in getattr(event,b)])
+        pass
+    pass
+
+    #Add the info to the data frames
+    for b in branches:
+        df[b+'_pt'] = arrDict[b+'_pt'] 
+        df[b+'_pz'] = arrDict[b+'_pz'] 
+        df[b+'_phi'] = arrDict[b+'_phi']
+        df[b+'_eta'] = arrDict[b+'_eta']
+        df[b+'_m'] = arrDict[b+'_m']
+             
+    pass
+
 #Function to convert a file path to a tree to a dataframe
-def convertTree(tree,signal=False,passFilePath=False):
+def convertTree(tree,signal=False,passFilePath=False,tlVectors=[]):
     if passFilePath:
         rfile = r.TFile(tree) 
         tree = rfile.Get('outtree')
     df = pd.DataFrame(tree2array(tree))
+    if len(tlVectors)>0: addTLorentzVectors(df,tree,branches=tlVectors)
     return df
-
+    
 
 #Run on its own for testing
 if __name__=='__main__':
@@ -24,7 +59,7 @@ if __name__=='__main__':
 
     backgroundFile = r.TFile(backgroundFile)
     background = backgroundFile.Get('outtree')
-    bkgdArray = convertTree(background,  signal=False,passFilePath=False)
+    bkgdArray = convertTree(background,  signal=False,passFilePath=False,tlVectors = ['selJet','sel_lep'])
     print bkgdArray
 
     # Save the dfs?
@@ -34,12 +69,20 @@ if __name__=='__main__':
     #Produce some hists with pandas and root to check
     if not os.path.exists('testPlots'): os.makedirs('testPlots')
 
-    c = r.TCanvas()
-    background.Draw('HT>>(100,0,3500)')
-    c.SaveAs('testPlots/rootHT.png')
+    # print 'Checking root and pandas make the same histograms'
+    # c = r.TCanvas()
+    # background.Draw('HT>>(100,0,3500)')
+    # c.SaveAs('testPlots/rootHT.png')
+    #
+    # bkgdArray.hist('HT',bins=range(0,3500+35,35))
+    # plt.show()
+    # plt.savefig('testPlots/pandasHT.png')
 
-    bkgdArray.hist('HT',bins=range(0,3500+35,35))
+    
+    print 'Checking the sum of the jets from the tlorentz vector is equal to the HT'
+    bkgdArray['myHT'] = bkgdArray.apply(lambda row: sum(row['selJet_pt']),axis=1)
+    bkgdArray['myHTDiff'] = bkgdArray['HT']-bkgdArray['myHT']
+    print bkgdArray['myHTDiff']
+    plt.hist2d(bkgdArray['HT'],bkgdArray['myHT'],bins=[30,30])
     plt.show()
-    plt.savefig('testPlots/pandasHT.png')
-
 

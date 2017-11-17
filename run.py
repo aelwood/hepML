@@ -6,13 +6,14 @@ exceptions=['selJetB']
 
 if __name__=='__main__':
 
-    #Load the dataframes
+    print "Loading DataFrames" 
     signalFile = '/nfs/dust/cms/group/susy-desy/marco/training_sample_new/top_sample_0.root'
     bkgdFile = '/nfs/dust/cms/group/susy-desy/marco/training_sample_new/stop_sample_0.root'
 
-    signal = convertTree(signalFile,signal=True,passFilePath=True)
-    bkgd = convertTree(bkgdFile,signal=False,passFilePath=True)
+    signal = convertTree(signalFile,signal=True,passFilePath=True,tlVectors = ['selJet','sel_lep'])
+    bkgd = convertTree(bkgdFile,signal=False,passFilePath=True,tlVectors = ['selJet','sel_lep'])
 
+    print "Making plots" 
     if makePlots:
         signalPlotter = Plotter(signal,'testPlots/signal',exceptions=exceptions)
         bkgdPlotter = Plotter(bkgd,'testPlots/bkgd',exceptions=exceptions)
