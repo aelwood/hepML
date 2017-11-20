@@ -11,16 +11,19 @@ def gram(e,px,py,pz):
     assert len(px)==len(py)
     assert len(py)==len(pz)
 
-    g = np.empty([len(e),len(e)])
+    g = []
     for i in range(len(e)):
+        g.append([])
         for j in range(len(e)):
-            g[i,j] = dotProduct([e[i],px[i],py[i],pz[i]], [e[j],px[j],py[j],pz[j]])
-    
-    print 'e',e
-    print 'px',px
-    print 'py',py
-    print 'pz',pz
-    print g
 
-    exit()
-    pass
+            g[i].append(dotProduct([e[i],px[i],py[i],pz[i]], [e[j],px[j],py[j],pz[j]]))
+    
+    #TESTING
+    # print 'e',e
+    # print 'px',px
+    # print 'py',py
+    # print 'pz',pz
+    # print g
+    # exit()
+
+    return g
