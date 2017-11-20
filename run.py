@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import math
 from dfConvert import convertTree
 from pandasPlotting.Plotter import Plotter
 from linearAlgebraFunctions import gram
@@ -55,9 +56,10 @@ if __name__=='__main__':
     #Must store it as an array of arrays as 2D numpy objects can't be stored in pandas
 
     #print 'm',signal['selJet_m'][0]+signal['sel_lep_m'][0]
-    signal['gram'] = signal.apply(lambda row: gram(row['selJet_e']+row['sel_lep_e'],\
-        row['selJet_px']+row['sel_lep_px'],row['selJet_py']+row['sel_lep_py'],\
-        row['selJet_pz']+row['sel_lep_pz']),axis=1)
+    signal['gram'] = signal.apply(lambda row: gram(row['selJet_e']+row['sel_lep_e']+[row['MET']],\
+        row['selJet_px']+row['sel_lep_px']+[row['MET']*math.cos(row['METPhi'])],\
+        row['selJet_py']+row['sel_lep_py']+[row['MET']*math.sin(row['METPhi'])],\
+        row['selJet_pz']+row['sel_lep_pz']+[0]),axis=1)
 
     #Now carry out machine learning (with some algo specific diagnostics)
     pass
