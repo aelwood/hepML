@@ -3,7 +3,9 @@ import pandas as pd
 import math
 from dfConvert import convertTree
 from pandasPlotting.Plotter import Plotter
+from pandasPlotting.dfFunctions import expandArrays
 from linearAlgebraFunctions import gram
+from root_numpy import rec2array
 
 makeDfs=False
 saveDfs=True #Save the dataframes if they're remade
@@ -43,7 +45,9 @@ if __name__=='__main__':
         bkgdPlotter = Plotter(bkgd,'testPlots/bkgd',exceptions=exceptions)
 
         signalPlotter.plotAllHists1D(withErrors=True)
+        signalPlotter.correlations()
         bkgdPlotter.plotAllHists1D(withErrors=True)
+        bkgdPlotter.correlations()
         pass
 
     #Now add the relevant variables to the DFs (make gram matrix)
@@ -56,12 +60,43 @@ if __name__=='__main__':
     #Must store it as an array of arrays as 2D numpy objects can't be stored in pandas
 
     #print 'm',signal['selJet_m'][0]+signal['sel_lep_m'][0]
-    signal['gram'] = signal.apply(lambda row: gram(row['selJet_e']+row['sel_lep_e']+[row['MET']],\
-        row['selJet_px']+row['sel_lep_px']+[row['MET']*math.cos(row['METPhi'])],\
-        row['selJet_py']+row['sel_lep_py']+[row['MET']*math.sin(row['METPhi'])],\
-        row['selJet_pz']+row['sel_lep_pz']+[0]),axis=1)
+    signal['gram'] = signal.apply(lambda row: gram(row['sel_lep_e']+[row['MET']]+row['selJet_e'],\
+        row['sel_lep_px']+[row['MET']*math.cos(row['METPhi'])]+row['selJet_px'],\
+        row['sel_lep_py']+[row['MET']*math.sin(row['METPhi'])]+row['selJet_py'],\
+        row['sel_lep_pz']+[0]+row['selJet_pz'],oneD=True),axis=1)
+
+    bkgd['gram'] = bkgd.apply(lambda row: gram(row['sel_lep_e']+[row['MET']]+row['selJet_e'],\
+        row['sel_lep_px']+[row['MET']*math.cos(row['METPhi'])]+row['selJet_px'],\
+        row['sel_lep_py']+[row['MET']*math.sin(row['METPhi'])]+row['selJet_py'],\
+        row['sel_lep_pz']+[0]+row['selJet_pz'],oneD=True),axis=1)
 
     #Now carry out machine learning (with some algo specific diagnostics)
+
+    # Put the data in a format for the machine learning: 
+    # combine signal and background with an extra column indicating which it is
+
+    signal['signal'] = 1
+    bkgd['signal'] = 0
+
+    combined = pd.concat([signal,bkgd])
+
+    #Choose the variables to train on
+
+    #gram matrix
+    combined = combined[['gram','signal']] 
+
+    #Vanilla
+    # combined=combined[['signal','HT','MET','METPhi','MT','MT2W','n_jet',
+    #'n_bjet','sel_lep_pt','sel_lep_eta','sel_lep_phi',
+    #'selJet_phi','selJet_pt','selJet_eta','selJet_m']]
+
+    # flatten the arrays
+    combined = expandArrays(combined) 
+    
+    #Now split pseudorandomly into training and testing
+
+    #Start with a BDT from sklearn (ala TMVA)
+
     pass
 
     #and carry out a diagnostic of the results
