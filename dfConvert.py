@@ -53,6 +53,8 @@ def convertTree(tree,signal=False,passFilePath=False,tlVectors=[]):
     if passFilePath:
         rfile = r.TFile(tree) 
         tree = rfile.Get('outtree')
+    #Note that this step can be replaced by root_pandas
+    # this can also flatten the trees automatically
     df = pd.DataFrame(tree2array(tree))
     if len(tlVectors)>0: addTLorentzVectors(df,tree,branches=tlVectors)
     return df

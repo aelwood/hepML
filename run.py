@@ -1,10 +1,11 @@
 import os
 import pandas as pd
+import numpy as np
 import math
 from dfConvert import convertTree
 from pandasPlotting.Plotter import Plotter
 from pandasPlotting.dfFunctions import expandArrays
-from linearAlgebraFunctions import gram
+from linearAlgebraFunctions import gram,addGramToFlatDF
 from root_numpy import rec2array
 
 makeDfs=False
@@ -26,6 +27,10 @@ if __name__=='__main__':
 
         signal = convertTree(signalFile,signal=True,passFilePath=True,tlVectors = ['selJet','sel_lep'])
         bkgd = convertTree(bkgdFile,signal=False,passFilePath=True,tlVectors = ['selJet','sel_lep'])
+
+        # #Expand the variables to 1D
+        signal = expandArrays(signal) 
+        bkgd = expandArrays(bkgd) 
 
         if saveDfs:
             print 'Saving the dataframes'
@@ -55,22 +60,24 @@ if __name__=='__main__':
     #Make a matrix of J+L x J+L where J is the number of jets and L is the number of leptons
     #Store it as a numpy matrix in the dataframe 
     
+
+    #METHOD 1:
+    # Store as a matrix in the numpy array
+    # It's better for it to be flat for machine learning... so using method 2
+
     #Use function that takes (4x) arrays of objects (for E,px,py,pz) and returns matrix
-
     #Must store it as an array of arrays as 2D numpy objects can't be stored in pandas
-
+    
     #print 'm',signal['selJet_m'][0]+signal['sel_lep_m'][0]
-    signal['gram'] = signal.apply(lambda row: gram(row['sel_lep_e']+[row['MET']]+row['selJet_e'],\
-        row['sel_lep_px']+[row['MET']*math.cos(row['METPhi'])]+row['selJet_px'],\
-        row['sel_lep_py']+[row['MET']*math.sin(row['METPhi'])]+row['selJet_py'],\
-        row['sel_lep_pz']+[0]+row['selJet_pz'],oneD=True),axis=1)
-
-    bkgd['gram'] = bkgd.apply(lambda row: gram(row['sel_lep_e']+[row['MET']]+row['selJet_e'],\
-        row['sel_lep_px']+[row['MET']*math.cos(row['METPhi'])]+row['selJet_px'],\
-        row['sel_lep_py']+[row['MET']*math.sin(row['METPhi'])]+row['selJet_py'],\
-        row['sel_lep_pz']+[0]+row['selJet_pz'],oneD=True),axis=1)
-
-    #Now carry out machine learning (with some algo specific diagnostics)
+    # signal['gram'] = signal.apply(lambda row: gram(row['sel_lep_e']+[row['MET']]+row['selJet_e'],\
+    #     row['sel_lep_px']+[row['MET']*math.cos(row['METPhi'])]+row['selJet_px'],\
+    #     row['sel_lep_py']+[row['MET']*math.sin(row['METPhi'])]+row['selJet_py'],\
+    #     row['sel_lep_pz']+[0]+row['selJet_pz']),axis=1)
+    #
+    # bkgd['gram'] = bkgd.apply(lambda row: gram(row['sel_lep_e']+[row['MET']]+row['selJet_e'],\
+    #     row['sel_lep_px']+[row['MET']*math.cos(row['METPhi'])]+row['selJet_px'],\
+    #     row['sel_lep_py']+[row['MET']*math.sin(row['METPhi'])]+row['selJet_py'],\
+    #     row['sel_lep_pz']+[0]+row['selJet_pz']),axis=1)
 
     # Put the data in a format for the machine learning: 
     # combine signal and background with an extra column indicating which it is
@@ -80,19 +87,43 @@ if __name__=='__main__':
 
     combined = pd.concat([signal,bkgd])
 
+    #METHOD 2:
+    
+    
+    #Put MET into the same format as the other objects
+    combined['MET_e']=combined['MET']
+    combined['MET_px']=combined['MET']*np.cos(combined['METPhi'])
+    combined['MET_py']=combined['MET']*np.sin(combined['METPhi'])
+    combined['MET_pz']=0
+    nSelLep = 0
+    nSelJet = 0
+    for k in combined.keys():
+        if 'sel_lep_px' in k: nSelLep+=1
+        if 'selJet_px' in k: nSelJet+=1
+    addGramToFlatDF(combined,single=['MET'],multi=[['sel_lep',nSelLep],['selJet',nSelJet]])
+
+
+    #Now carry out machine learning (with some algo specific diagnostics)
     #Choose the variables to train on
 
     #gram matrix
-    combined = combined[['gram','signal']] 
+    varsToTrainOn = ['gram','selJetB','lep_type','signal']
 
-    #Vanilla
-    # combined=combined[['signal','HT','MET','METPhi','MT','MT2W','n_jet',
+    #vanilla
+    #varsToTrainOn = ['signal','HT','MET','METPhi','MT','MT2W','n_jet',
     #'n_bjet','sel_lep_pt','sel_lep_eta','sel_lep_phi',
-    #'selJet_phi','selJet_pt','selJet_eta','selJet_m']]
+    #'selJet_phi','selJet_pt','selJet_eta','selJet_m','selJetB']
 
-    # flatten the arrays
-    combined = expandArrays(combined) 
-    
+    columnsInDataFrame = []
+    for k in combined.keys():
+        for v in varsToTrainOn:
+            if v in k: columnsInDataFrame.append(k)
+
+    combined = combined[columnsInDataFrame] 
+
+    #TODO: test the gram matrix
+    # start the Machine learning
+
     #Now split pseudorandomly into training and testing
 
     #Start with a BDT from sklearn (ala TMVA)
