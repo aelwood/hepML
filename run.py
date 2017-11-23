@@ -19,7 +19,7 @@ from root_numpy import rec2array
 makeDfs=False
 saveDfs=True #Save the dataframes if they're remade
 
-prepareInputs=False
+prepareInputs=True
 
 makePlots=False
 
@@ -139,7 +139,8 @@ if __name__=='__main__':
             for v in gramVars:
                 if v in k: columnsInDataFrameGram.append(k)
             for v in vanillaVars:
-                if v in k: columnsInDataFrameVanilla.append(k)
+                if v in k and 'gram' not in k:
+                    columnsInDataFrameVanilla.append(k)
 
         #Select just the features we're interested in
         #For now setting NaNs to 0 for compatibility
@@ -159,8 +160,6 @@ if __name__=='__main__':
         combinedVanilla = pd.read_pickle('dfs/combinedVanilla.pkl')
 
 
-    #TODO: test the gram matrix
-
     #############################################################
     #Now everything is ready can start the machine learning
 
@@ -171,25 +170,31 @@ if __name__=='__main__':
         featureImportance(combinedVanilla,'signal','testPlots/mlPlots/vanilla/featureImportance')
 
     print 'Splitting up data'
-    #Choose the one to do (just gram for now)
-    mlData = MlData(combinedGram,'signal')
+    #Choose the one to do 
+    #gram
+    # mlData = MlData(combinedGram,'signal')
+    # outDir = 'gram'
+
+    #Vanilla
+    mlData = MlData(combinedVanilla,'signal')
+    outDir = 'vanilla'
 
     #Now split pseudorandomly into training and testing
-    # (thanks Tim Head https://betatim.github.io/posts/sklearn-for-TMVA-users/ )
-
-    #Save 20% of the dataset for evaluation at the end
     #Split the development set into training and testing
+    #(forgetting about evaluation for now)
 
-    mlData.split(evalSize=0.2,testSize=0.33)
+    mlData.split(evalSize=0.0,testSize=0.33)
 
     #Start with a BDT from sklearn (ala TMVA)
     print 'Defining and fitting BDT'
-
-    bdt = Bdt(mlData)
+    bdt = Bdt(mlData,'testPlots/mlPlots/'+outDir+'/bdt')
     bdt.setup()
     bdt.fit()
 
+    #and carry out a diagnostic of the results
+    print 'Producing diagnostics'
+    bdt.diagnostics()
+
+    #Now lets move on to a deep neural net 
     pass
 
-    #and carry out a diagnostic of the results
-    pass

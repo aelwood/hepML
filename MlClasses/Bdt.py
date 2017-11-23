@@ -1,11 +1,13 @@
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.metrics import classification_report, roc_auc_score
+from MlClasses.PerformanceTests import classificationReport,rocCurve,compareTrainTest
+import os
 
 class Bdt(object):
     '''Take some data split into test and train sets and train a bdt on it'''
-    def __init__(self,data):
+    def __init__(self,data,output=None):
         self.data = data
+        self.output = output
 
     def setup(self,dtArgs={},bdtArgs={}):
 
@@ -24,3 +26,28 @@ class Bdt(object):
 
     def fit(self):
         self.bdt.fit(self.data.X_train, self.data.y_train)
+
+    def classificationReport(self):
+        if not os.path.exists(self.output): os.makedirs(self.output)
+        f=open(os.path.join(self.output,'classificationReport.txt'),'w')
+        f.write( 'Performance on test set:')
+        classificationReport(self.bdt,self.data.X_test,self.data.y_test,f)
+
+        f.write( '\n' )
+        f.write('Performance on training set:')
+        classificationReport(self.bdt,self.data.X_train,self.data.y_train,f)
+        
+    def rocCurve(self):
+        rocCurve(self.bdt,self.data.X_test,self.data.y_test,self.output)
+
+    def compareTrainTest(self):
+        compareTrainTest(self.bdt,self.data.X_train,self.data.y_train,\
+                self.data.X_test,self.data.y_test,self.output)
+
+    def diagnostics(self):
+        self.classificationReport()
+        self.rocCurve()
+        self.compareTrainTest()
+
+
+

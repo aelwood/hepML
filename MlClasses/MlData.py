@@ -10,8 +10,9 @@ class MlData(object):
     def split(self, evalSize=0.33, testSize=0.33):
         # (thanks Tim Head https://betatim.github.io/posts/sklearn-for-TMVA-users/ )
         self.X_dev,self.X_eval, self.y_dev,self.y_eval = \
-                train_test_split(self.X, self.y, test_size=testSize, random_state=42)
+                train_test_split(self.X, self.y, test_size=evalSize, random_state=42)
 
         self.X_train,self.X_test, self.y_train,self.y_test = \
-                train_test_split(self.X_dev, self.y_dev,test_size=evalSize, random_state=492)
+                train_test_split(self.X_dev, self.y_dev,test_size=testSize, random_state=492)
+
         
