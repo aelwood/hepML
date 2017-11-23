@@ -81,3 +81,11 @@ def compareTrainTest(clf, X_train, y_train, X_test, y_test, output, bins=30):
     plt.savefig(os.path.join(output,'compareTrainTest.pdf'))
     plt.clf()
 
+def plotDiscriminator(clf,X_test,y_test,bins=30):
+    plt.hist(clf.decision_function(X_test[y_test==0]).ravel(),color='r', alpha=0.5, bins=bins)
+    plt.hist(clf.decision_function(X_test[y_test==1]).ravel(),color='b', alpha=0.5, bins=bins)
+    plt.xlabel("scikit-learn classifier output")
+    if not os.path.exists(output): os.makedirs(output)
+    plt.savefig(os.path.join(output,'discriminator.pdf'))
+    plt.clf()
+

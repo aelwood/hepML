@@ -49,5 +49,9 @@ class Bdt(object):
         self.rocCurve()
         self.compareTrainTest()
 
+    def plotDiscriminator(self):
+        plotDiscriminator(self.bdt,self.data.X_test,self.data.y_test, self.output)
+
+
 
 
