@@ -18,7 +18,7 @@ def classificationReport(clf,X_test,y_test,outputFile=None):
         print auc
         
 
-def rocCurve(clf,X_test,y_test,output):
+def rocCurve(clf,X_test,y_test,output,append=''):
     decisions = clf.decision_function(X_test)
     # Compute ROC curve and area under the curve
     fpr, tpr, thresholds = roc_curve(y_test, decisions)
@@ -35,7 +35,7 @@ def rocCurve(clf,X_test,y_test,output):
     plt.legend(loc="lower right")
     plt.grid()
     if not os.path.exists(output): os.makedirs(output)
-    plt.savefig(os.path.join(output,'rocCurve.pdf'))
+    plt.savefig(os.path.join(output,'rocCurve'+append+'.pdf'))
     plt.clf()
 
 def compareTrainTest(clf, X_train, y_train, X_test, y_test, output, bins=30):

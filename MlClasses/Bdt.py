@@ -14,17 +14,20 @@ class Bdt(object):
         #Uses TMVA parameters as default
         if len(dtArgs)==0: 
             dtArgs['max_depth']=3
+            #dtArgs['max_depth']=5
             dtArgs['min_samples_leaf']=0.05*len(self.data.X_train)
 
         if len(bdtArgs)==0:
             bdtArgs['algorithm']='SAMME'
             bdtArgs['n_estimators']=800
             bdtArgs['learning_rate']=0.5
+            #bdtArgs['learning_rate']=1.0
 
         self.dt = DecisionTreeClassifier(**dtArgs)
         self.bdt = AdaBoostClassifier(self.dt,**bdtArgs)
 
     def fit(self):
+
         self.bdt.fit(self.data.X_train, self.data.y_train)
 
     def classificationReport(self):
@@ -39,6 +42,7 @@ class Bdt(object):
         
     def rocCurve(self):
         rocCurve(self.bdt,self.data.X_test,self.data.y_test,self.output)
+        rocCurve(self.bdt,self.data.X_train,self.data.y_train,self.output,append='_train')
 
     def compareTrainTest(self):
         compareTrainTest(self.bdt,self.data.X_train,self.data.y_train,\
