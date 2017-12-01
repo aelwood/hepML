@@ -18,10 +18,10 @@ def classificationReport(clf,X_test,y_test,outputFile=None):
         print auc
         
 
-def rocCurve(clf,X_test,y_test,output,append=''):
-    decisions = clf.decision_function(X_test)
+def rocCurve(y_pred,X_test,y_test,output,append=''):
+    #decisions = clf.decision_function(X_test)
     # Compute ROC curve and area under the curve
-    fpr, tpr, thresholds = roc_curve(y_test, decisions)
+    fpr, tpr, thresholds = roc_curve(y_test, y_pred)
     roc_auc = auc(fpr, tpr)
 
     plt.plot(fpr, tpr, lw=1, label='ROC (area = %0.2f)'%(roc_auc))

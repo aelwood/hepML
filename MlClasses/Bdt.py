@@ -15,7 +15,7 @@ class Bdt(object):
         if len(dtArgs)==0: 
             dtArgs['max_depth']=3
             #dtArgs['max_depth']=5
-            dtArgs['min_samples_leaf']=0.05*len(self.data.X_train)
+            dtArgs['min_samples_leaf']=0.05
 
         if len(bdtArgs)==0:
             bdtArgs['algorithm']='SAMME'
@@ -41,8 +41,8 @@ class Bdt(object):
         classificationReport(self.bdt,self.data.X_train,self.data.y_train,f)
         
     def rocCurve(self):
-        rocCurve(self.bdt,self.data.X_test,self.data.y_test,self.output)
-        rocCurve(self.bdt,self.data.X_train,self.data.y_train,self.output,append='_train')
+        rocCurve(self.bdt.decision_function(self.data.X_test),self.data.X_test,self.data.y_test,self.output)
+        rocCurve(self.bdt.decision_function(self.data.X_train),self.data.X_train,self.data.y_train,self.output,append='_train')
 
     def compareTrainTest(self):
         compareTrainTest(self.bdt,self.data.X_train,self.data.y_train,\
