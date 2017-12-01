@@ -15,7 +15,7 @@ class Bdt(object):
         if len(dtArgs)==0: 
             dtArgs['max_depth']=3
             #dtArgs['max_depth']=5
-            dtArgs['min_samples_leaf']=0.05*len(self.data.X_train)
+            dtArgs['min_samples_leaf']=0.05
 
         if len(bdtArgs)==0:
             bdtArgs['algorithm']='SAMME'

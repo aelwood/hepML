@@ -16,15 +16,16 @@ from MlClasses.Bdt import Bdt
 from linearAlgebraFunctions import gram,addGramToFlatDF
 from root_numpy import rec2array
 
-makeDfs=False
+
+makeDfs=True
 saveDfs=True #Save the dataframes if they're remade
 
-makePlots=False
+makePlots=True
 
-prepareInputs=False
+prepareInputs=True
 
 #ML options
-plotFeatureImportances=False
+plotFeatureImportances=True
 
 exceptions=[] #variables to miss out when plotting
 
@@ -56,7 +57,7 @@ if __name__=='__main__':
         print "Loading DataFrames" 
 
         signal = pd.read_pickle('dfs/signal.pkl')
-        bkgd = pd.read_pickle('dfs/signal.pkl')
+        bkgd = pd.read_pickle('dfs/bkgd.pkl')
 
     if makePlots:
         print "Making plots" 
