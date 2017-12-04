@@ -17,7 +17,7 @@ from linearAlgebraFunctions import gram,addGramToFlatDF
 from root_numpy import rec2array
 
 
-makeDfs=True
+makeDfs=False
 saveDfs=True #Save the dataframes if they're remade
 
 makePlots=True
@@ -26,9 +26,6 @@ prepareInputs=True
 
 #ML options
 plotFeatureImportances=True
-
-exceptions=[] #variables to miss out when plotting
-
 
 if __name__=='__main__':
 
@@ -61,8 +58,13 @@ if __name__=='__main__':
 
     if makePlots:
         print "Making plots" 
-        signalPlotter = Plotter(signal,'testPlots/signal',exceptions=exceptions)
-        bkgdPlotter = Plotter(bkgd,'testPlots/bkgd',exceptions=exceptions)
+        #Skip out excessive jet info
+        exceptions=[] 
+        for k in signal.keys():
+            if 'selJet' in k or '_x' in k or '_y' in k or '_z' in k:
+                exceptions.append(k)
+        signalPlotter = Plotter(signal.copy(),'testPlots/signal',exceptions=exceptions)
+        bkgdPlotter = Plotter(bkgd.copy(),'testPlots/bkgd',exceptions=exceptions)
 
         signalPlotter.plotAllHists1D(withErrors=True)
         signalPlotter.correlations()
@@ -111,6 +113,7 @@ if __name__=='__main__':
         #Put MET into the same format as the other objects
         print 'Producing GRAM matrix'
         combined['MET_e']=combined['MET']
+        combined.drop('MET',axis=1)#Drop the duplicate
         combined['MET_px']=combined['MET']*np.cos(combined['METPhi'])
         combined['MET_py']=combined['MET']*np.sin(combined['METPhi'])
         combined['MET_pz']=0
@@ -184,7 +187,7 @@ if __name__=='__main__':
     #Split the development set into training and testing
     #(forgetting about evaluation for now)
 
-    mlData.split(evalSize=0.0,testSize=0.33)
+    mlData.prepare(evalSize=0.0,testSize=0.33)
 
     #Start with a BDT from sklearn (ala TMVA)
     print 'Defining and fitting BDT'

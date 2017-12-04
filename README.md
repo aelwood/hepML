@@ -2,6 +2,12 @@
 
 A package for machine learning studies with HEP
 
+When installing make sure to initialise and update the submodule:
+
+  - ```git submodule init```
+
+  - ```git submodule update```
+
 Start by turning your root trees into numpy arrays! Then carry out some python based data analysis.
 
 For convenience, if you have access to cvmfs and don't want to use tensorflow or keras just use:
