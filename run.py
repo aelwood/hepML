@@ -179,12 +179,12 @@ if __name__=='__main__':
     print 'Splitting up data'
     #Choose the one to do 
     #gram
-    mlData = MlData(combinedGram,'signal')
-    outDir = 'gram'
+    # mlData = MlData(combinedGram,'signal')
+    # outDir = 'gram'
 
     #Vanilla
-    # mlData = MlData(combinedVanilla,'signal')
-    # outDir = 'vanilla'
+    mlData = MlData(combinedVanilla,'signal')
+    outDir = 'vanilla'
 
     #Now split pseudorandomly into training and testing
     #Split the development set into training and testing
