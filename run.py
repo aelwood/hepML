@@ -12,6 +12,7 @@ from pandasPlotting.dtFunctions import featureImportance
 
 from MlClasses.MlData import MlData
 from MlClasses.Bdt import Bdt
+from MlClasses.Dnn import Dnn
 
 from linearAlgebraFunctions import gram,addGramToFlatDF
 from root_numpy import rec2array
@@ -20,12 +21,14 @@ from root_numpy import rec2array
 makeDfs=False
 saveDfs=True #Save the dataframes if they're remade
 
-makePlots=True
+makePlots=False
 
-prepareInputs=True
+prepareInputs=False
 
 #ML options
-plotFeatureImportances=True
+plotFeatureImportances=False
+doBDT=False
+doDNN=True
 
 if __name__=='__main__':
 
@@ -189,16 +192,28 @@ if __name__=='__main__':
 
     mlData.prepare(evalSize=0.0,testSize=0.33)
 
-    #Start with a BDT from sklearn (ala TMVA)
-    print 'Defining and fitting BDT'
-    bdt = Bdt(mlData,'testPlots/mlPlots/'+outDir+'/bdt')
-    bdt.setup()
-    bdt.fit()
+    if doBDT:
 
-    #and carry out a diagnostic of the results
-    print 'Producing diagnostics'
-    bdt.diagnostics()
+        #Start with a BDT from sklearn (ala TMVA)
+        print 'Defining and fitting BDT'
+        bdt = Bdt(mlData,'testPlots/mlPlots/'+outDir+'/bdt')
+        bdt.setup()
+        bdt.fit()
 
-    #Now lets move on to a deep neural net 
-    pass
+        #and carry out a diagnostic of the results
+        print ' > Producing diagnostics'
+        bdt.diagnostics()
+
+    if doDNN:
+
+        #Now lets move on to a deep neural net 
+        print 'Defining and fitting DNN'
+        dnn = Dnn(mlData,'testPlots/mlPlots/'+outDir+'/dnn')
+        dnn.setup()
+        dnn.fit()
+
+        print ' > Producing diagnostics'
+        dnn.diagnostics()
+
+        pass
 
