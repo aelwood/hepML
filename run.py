@@ -23,7 +23,7 @@ saveDfs=True #Save the dataframes if they're remade
 
 makePlots=False
 
-prepareInputs=True
+prepareInputs=False
 
 #ML options
 plotFeatureImportances=True
@@ -133,8 +133,7 @@ if __name__=='__main__':
 
     else:
         print 'Reading prepared files'
-        combinedGram = pd.read_pickle('dfs/combinedGram.pkl')
-        combinedVanilla = pd.read_pickle('dfs/combinedVanilla.pkl')
+        combined = pd.read_pickle('dfs/combined.pkl')
 
     #Now carry out machine learning (with some algo specific diagnostics)
     #Choose the variables to train on
@@ -148,11 +147,11 @@ if __name__=='__main__':
             #The 4 vectors only
             'fourVector':['signal',
             'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            'selJet_phi','selJet_pt','selJet_eta','selJet_m'],
+            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
 
             'fourVectorBL':['signal','lep_type','selJetB',
             'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            'selJet_phi','selJet_pt','selJet_eta','selJet_m'],
+            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
 
             #A vanilla analysis with HL variables and lead 3 jets
             'vanilla':['signal','HT','MET','MT','MT2W','n_jet','lep_type'
@@ -163,30 +162,23 @@ if __name__=='__main__':
 
             }
 
-    for var in chosenVars:
+    for varSetName,varSet in chosenVars.iteritems():
 
         print '==========================='
-        print 'Analysing var set '+var
+        print 'Analysing var set '+varSetName
         print '==========================='
 
         #Pick out the expanded arrays
-        columnsInDataFrameGram = []
-        columnsInDataFrameVanilla = []
+        columnsInDataFrame = []
         for k in combined.keys():
-            for v in gramVars:
-                if v in k: columnsInDataFrameGram.append(k)
-            for v in vanillaVars:
-                if v in k and 'gram' not in k:
-                    columnsInDataFrameVanilla.append(k)
+            for v in varSet:
+                #Little trick to ensure only the start of the string is checked
+                if ' '+v in ' '+k: columnsInDataFrame.append(k)
 
         #Select just the features we're interested in
         #For now setting NaNs to 0 for compatibility
-        combinedGram = combined[columnsInDataFrameGram].copy()
-        combinedGram.fillna(0,inplace=True)
-        combinedVanilla = combined[columnsInDataFrameVanilla].copy()
-        combinedVanilla.fillna(0,inplace=True)
-
-        exit()
+        combinedTest = combined[columnsInDataFrame].copy()
+        combinedTest.fillna(0,inplace=True)
 
         #############################################################
         #Now everything is ready can start the machine learning
