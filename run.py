@@ -23,11 +23,11 @@ saveDfs=True #Save the dataframes if they're remade
 
 makePlots=False
 
-prepareInputs=False
+prepareInputs=True
 
 #ML options
-plotFeatureImportances=False
-doBDT=False
+plotFeatureImportances=True
+doBDT=True
 doDNN=True
 
 if __name__=='__main__':
@@ -127,17 +127,47 @@ if __name__=='__main__':
             if 'selJet_px' in k: nSelJet+=1
         addGramToFlatDF(combined,single=['MET'],multi=[['sel_lep',nSelLep],['selJet',nSelJet]])
 
+        if saveDfs:
+            print 'Saving prepared files'
+            combined.to_pickle('dfs/combined.pkl')
 
-        #Now carry out machine learning (with some algo specific diagnostics)
-        #Choose the variables to train on
+    else:
+        print 'Reading prepared files'
+        combinedGram = pd.read_pickle('dfs/combinedGram.pkl')
+        combinedVanilla = pd.read_pickle('dfs/combinedVanilla.pkl')
 
-        #gram matrix
-        gramVars = ['gram','selJetB','lep_type','signal']
+    #Now carry out machine learning (with some algo specific diagnostics)
+    #Choose the variables to train on
 
-        #vanilla
-        vanillaVars = ['signal','HT','MET','METPhi','MT','MT2W','n_jet',
-        'n_bjet','sel_lep_pt','sel_lep_eta','sel_lep_phi',
-        'selJet_phi','selJet_pt','selJet_eta','selJet_m','selJetB']
+    chosenVars = {
+            #Just the gram matrix, with or without b info
+            'gram':['signal','gram'],
+
+            'gramBL':['signal','gram','selJetB','lep_type'],
+
+            #The 4 vectors only
+            'fourVector':['signal',
+            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            'selJet_phi','selJet_pt','selJet_eta','selJet_m'],
+
+            'fourVectorBL':['signal','lep_type','selJetB',
+            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            'selJet_phi','selJet_pt','selJet_eta','selJet_m'],
+
+            #A vanilla analysis with HL variables and lead 3 jets
+            'vanilla':['signal','HT','MET','MT','MT2W','n_jet','lep_type'
+            'n_bjet','sel_lep_pt','sel_lep_eta','sel_lep_phi',
+            'selJet_phi0','selJet_pt0','selJet_eta0','selJet_m0',
+            'selJet_phi1','selJet_pt1','selJet_eta1','selJet_m1',
+            'selJet_phi2','selJet_pt2','selJet_eta2','selJet_m2'],
+
+            }
+
+    for var in chosenVars:
+
+        print '==========================='
+        print 'Analysing var set '+var
+        print '==========================='
 
         #Pick out the expanded arrays
         columnsInDataFrameGram = []
@@ -156,64 +186,56 @@ if __name__=='__main__':
         combinedVanilla = combined[columnsInDataFrameVanilla].copy()
         combinedVanilla.fillna(0,inplace=True)
 
-        if saveDfs:
-            print 'Saving prepared files'
-            combinedGram.to_pickle('dfs/combinedGram.pkl')
-            combinedVanilla.to_pickle('dfs/combinedVanilla.pkl')
+        exit()
 
-    else:
-        print 'Reading prepared files'
-        combinedGram = pd.read_pickle('dfs/combinedGram.pkl')
-        combinedVanilla = pd.read_pickle('dfs/combinedVanilla.pkl')
+        #############################################################
+        #Now everything is ready can start the machine learning
 
+        if plotFeatureImportances:
+            print 'Making feature importances'
+            #Find the feature importance with a random forest classifier
+            featureImportance(combinedGram,'signal','testPlots/mlPlots/gram/featureImportance')
+            featureImportance(combinedVanilla,'signal','testPlots/mlPlots/vanilla/featureImportance')
 
-    #############################################################
-    #Now everything is ready can start the machine learning
+        print 'Splitting up data'
+        #Choose the one to do 
+        #gram
+        # mlData = MlData(combinedGram,'signal')
+        # outDir = 'gram'
 
-    if plotFeatureImportances:
-        print 'Making feature importances'
-        #Find the feature importance with a random forest classifier
-        featureImportance(combinedGram,'signal','testPlots/mlPlots/gram/featureImportance')
-        featureImportance(combinedVanilla,'signal','testPlots/mlPlots/vanilla/featureImportance')
+        #Vanilla
+        mlData = MlData(combinedVanilla,'signal')
+        outDir = 'vanilla'
 
-    print 'Splitting up data'
-    #Choose the one to do 
-    #gram
-    # mlData = MlData(combinedGram,'signal')
-    # outDir = 'gram'
+        #Now split pseudorandomly into training and testing
+        #Split the development set into training and testing
+        #(forgetting about evaluation for now)
 
-    #Vanilla
-    mlData = MlData(combinedVanilla,'signal')
-    outDir = 'vanilla'
+        mlData.prepare(evalSize=0.0,testSize=0.33)
 
-    #Now split pseudorandomly into training and testing
-    #Split the development set into training and testing
-    #(forgetting about evaluation for now)
+        if doBDT:
 
-    mlData.prepare(evalSize=0.0,testSize=0.33)
+            #Start with a BDT from sklearn (ala TMVA)
+            print 'Defining and fitting BDT'
+            bdt = Bdt(mlData,'testPlots/mlPlots/'+outDir+'/bdt')
+            bdt.setup()
+            bdt.fit()
 
-    if doBDT:
+            #and carry out a diagnostic of the results
+            print ' > Producing diagnostics'
+            bdt.diagnostics()
 
-        #Start with a BDT from sklearn (ala TMVA)
-        print 'Defining and fitting BDT'
-        bdt = Bdt(mlData,'testPlots/mlPlots/'+outDir+'/bdt')
-        bdt.setup()
-        bdt.fit()
+        if doDNN:
 
-        #and carry out a diagnostic of the results
-        print ' > Producing diagnostics'
-        bdt.diagnostics()
+            #Now lets move on to a deep neural net 
+            print 'Defining and fitting DNN'
+            dnn = Dnn(mlData,'testPlots/mlPlots/'+outDir+'/dnn')
+            dnn.setup()
+            dnn.fit()
 
-    if doDNN:
+            print ' > Producing diagnostics'
+            dnn.diagnostics()
 
-        #Now lets move on to a deep neural net 
-        print 'Defining and fitting DNN'
-        dnn = Dnn(mlData,'testPlots/mlPlots/'+outDir+'/dnn')
-        dnn.setup()
-        dnn.fit()
+            pass
 
-        print ' > Producing diagnostics'
-        dnn.diagnostics()
-
-        pass
-
+    pass # end of variable set loop
