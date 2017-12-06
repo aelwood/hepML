@@ -162,6 +162,9 @@ if __name__=='__main__':
 
             }
 
+    trainedModels={}
+    trainedModels['truth']=combined['signal']
+
     for varSetName,varSet in chosenVars.iteritems():
 
         print '==========================='
@@ -186,18 +189,11 @@ if __name__=='__main__':
         if plotFeatureImportances:
             print 'Making feature importances'
             #Find the feature importance with a random forest classifier
-            featureImportance(combinedGram,'signal','testPlots/mlPlots/gram/featureImportance')
-            featureImportance(combinedVanilla,'signal','testPlots/mlPlots/vanilla/featureImportance')
+            featureImportance(combinedTest,'signal','testPlots/mlPlots/'+varSetName+'/featureImportance')
 
         print 'Splitting up data'
-        #Choose the one to do 
-        #gram
-        # mlData = MlData(combinedGram,'signal')
-        # outDir = 'gram'
 
-        #Vanilla
-        mlData = MlData(combinedVanilla,'signal')
-        outDir = 'vanilla'
+        mlData = MlData(combinedTest,'signal')
 
         #Now split pseudorandomly into training and testing
         #Split the development set into training and testing
@@ -209,7 +205,7 @@ if __name__=='__main__':
 
             #Start with a BDT from sklearn (ala TMVA)
             print 'Defining and fitting BDT'
-            bdt = Bdt(mlData,'testPlots/mlPlots/'+outDir+'/bdt')
+            bdt = Bdt(mlData,'testPlots/mlPlots/'+varSetName+'/bdt')
             bdt.setup()
             bdt.fit()
 
@@ -217,17 +213,26 @@ if __name__=='__main__':
             print ' > Producing diagnostics'
             bdt.diagnostics()
 
+            trainedModels[varSetName+'_bdt']=bdt.testPrediction()
+
         if doDNN:
 
             #Now lets move on to a deep neural net 
             print 'Defining and fitting DNN'
-            dnn = Dnn(mlData,'testPlots/mlPlots/'+outDir+'/dnn')
+            dnn = Dnn(mlData,'testPlots/mlPlots/'+varSetName+'/dnn')
             dnn.setup()
             dnn.fit()
 
             print ' > Producing diagnostics'
             dnn.diagnostics()
 
+            trainedModels[varSetName+'_dnn']=dnn.testPrediction()
+
             pass
 
     pass # end of variable set loop
+
+    #Now compare all the different versions
+    compareMl = ComparePerformances(trainedModels,output='testPlots/mlPlots/comparisons')
+    compareMl.compareRoc()
+

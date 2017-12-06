@@ -89,3 +89,6 @@ class Dnn(object):
         self.classificationReport()
         self.rocCurve()
 
+    def testPrediction(self):
+        return self.model.predict(self.data.X_test.as_matrix())
+

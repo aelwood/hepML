@@ -56,6 +56,9 @@ class Bdt(object):
     def plotDiscriminator(self):
         plotDiscriminator(self.bdt,self.data.X_test,self.data.y_test, self.output)
 
+    def testPrediction(self):
+        return self.bdt.decision_function(self.data.X_test)
+
 
 
 
