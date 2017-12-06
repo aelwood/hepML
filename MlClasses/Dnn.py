@@ -82,8 +82,8 @@ class Dnn(object):
 
     def rocCurve(self):
 
-        rocCurve(self.model.predict(self.data.X_test.as_matrix()), self.data.X_test,self.data.y_test,self.output)
-        rocCurve(self.model.predict(self.data.X_train.as_matrix()),self.data.X_train,self.data.y_train,self.output,append='_train')
+        rocCurve(self.model.predict(self.data.X_test.as_matrix()), self.data.y_test,self.output)
+        rocCurve(self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,self.output,append='_train')
 
     def diagnostics(self):
         self.classificationReport()

@@ -13,6 +13,7 @@ from pandasPlotting.dtFunctions import featureImportance
 from MlClasses.MlData import MlData
 from MlClasses.Bdt import Bdt
 from MlClasses.Dnn import Dnn
+from MlClasses.ComparePerformances import ComparePerformances
 
 from linearAlgebraFunctions import gram,addGramToFlatDF
 from root_numpy import rec2array
@@ -26,7 +27,7 @@ makePlots=False
 prepareInputs=False
 
 #ML options
-plotFeatureImportances=True
+plotFeatureImportances=False
 doBDT=True
 doDNN=True
 
@@ -163,7 +164,6 @@ if __name__=='__main__':
             }
 
     trainedModels={}
-    trainedModels['truth']=combined['signal']
 
     for varSetName,varSet in chosenVars.iteritems():
 
@@ -180,8 +180,8 @@ if __name__=='__main__':
 
         #Select just the features we're interested in
         #For now setting NaNs to 0 for compatibility
-        combinedTest = combined[columnsInDataFrame].copy()
-        combinedTest.fillna(0,inplace=True)
+        combinedToRun = combined[columnsInDataFrame].copy()
+        combinedToRun.fillna(0,inplace=True)
 
         #############################################################
         #Now everything is ready can start the machine learning
@@ -189,17 +189,20 @@ if __name__=='__main__':
         if plotFeatureImportances:
             print 'Making feature importances'
             #Find the feature importance with a random forest classifier
-            featureImportance(combinedTest,'signal','testPlots/mlPlots/'+varSetName+'/featureImportance')
+            featureImportance(combinedToRun,'signal','testPlots/mlPlots/'+varSetName+'/featureImportance')
 
         print 'Splitting up data'
 
-        mlData = MlData(combinedTest,'signal')
+        mlData = MlData(combinedToRun,'signal')
 
         #Now split pseudorandomly into training and testing
         #Split the development set into training and testing
         #(forgetting about evaluation for now)
 
         mlData.prepare(evalSize=0.0,testSize=0.33)
+
+        #As the splitting is done with the same pseudorandom initialisation the test set is always the same
+        if not 'truth' in trainedModels: trainedModels['truth']=mlData.y_test
 
         if doBDT:
 
@@ -235,4 +238,5 @@ if __name__=='__main__':
     #Now compare all the different versions
     compareMl = ComparePerformances(trainedModels,output='testPlots/mlPlots/comparisons')
     compareMl.compareRoc()
+
 

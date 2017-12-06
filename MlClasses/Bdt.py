@@ -41,8 +41,8 @@ class Bdt(object):
         classificationReport(self.bdt,self.data.X_train,self.data.y_train,f)
         
     def rocCurve(self):
-        rocCurve(self.bdt.decision_function(self.data.X_test),self.data.X_test,self.data.y_test,self.output)
-        rocCurve(self.bdt.decision_function(self.data.X_train),self.data.X_train,self.data.y_train,self.output,append='_train')
+        rocCurve(self.bdt.decision_function(self.data.X_test),self.data.y_test,output=self.output)
+        rocCurve(self.bdt.decision_function(self.data.X_train),self.data.y_train,output=self.output,append='_train')
 
     def compareTrainTest(self):
         compareTrainTest(self.bdt,self.data.X_train,self.data.y_train,\

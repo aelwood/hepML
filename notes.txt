@@ -7,6 +7,8 @@ Possibilities:
 
 - move to root_pandas instead of root_numpy 
 - make the feature importances plotter use the ML data class
+- the mlData takes one set of variables, could allow it to choose subsets
+  instead
 
 NOTE:
 

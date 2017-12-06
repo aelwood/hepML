@@ -18,15 +18,27 @@ def classificationReport(clf,X_test,y_test,outputFile=None):
         print auc
         
 
-def rocCurve(y_pred,X_test,y_test,output,append=''):
-    #decisions = clf.decision_function(X_test)
-    # Compute ROC curve and area under the curve
-    fpr, tpr, thresholds = roc_curve(y_test, y_pred)
-    roc_auc = auc(fpr, tpr)
+def rocCurve(y_preds,y_test=None,output=None,append=''):
+    '''Compute the ROC curves, can either pass the predictions and the truth set or 
+    pass a dictionary that contains one value 'truth' of the truth set and the other 
+    predictions labeled as you want'''
 
-    plt.plot(fpr, tpr, lw=1, label='ROC (area = %0.2f)'%(roc_auc))
+    # Compute ROC curve and area under the curve
+    if not isinstance(y_preds,dict):
+        assert not y_test is None,'Need to include testing set if not passing dict'
+        y_preds={'ROC':y_preds}
+    else:
+        y_test=y_preds['truth']
+
+    for name,y_pred in y_preds.iteritems():
+        if name=='truth': continue
+        fpr, tpr, thresholds = roc_curve(y_test, y_pred)
+        roc_auc = auc(fpr, tpr)
+
+        plt.plot(fpr, tpr, lw=1, label=name+' (area = %0.2f)'%(roc_auc))
 
     plt.plot([0, 1], [0, 1], '--', color=(0.6, 0.6, 0.6), label='Luck')
+
     plt.xlim([-0.05, 1.05])
     plt.ylim([-0.05, 1.05])
     plt.xlabel('False Positive Rate')
@@ -39,6 +51,7 @@ def rocCurve(y_pred,X_test,y_test,output,append=''):
     plt.clf()
 
 def compareTrainTest(clf, X_train, y_train, X_test, y_test, output, bins=30):
+    '''Compares the decision function for the train and test BDT'''
     decisions = []
     for X,y in ((X_train, y_train), (X_test, y_test)):
         d1 = clf.decision_function(X[y>0.5]).ravel()
