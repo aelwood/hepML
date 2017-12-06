@@ -16,7 +16,9 @@ For convenience, if you have access to cvmfs and don't want to use tensorflow or
 
 Or, for a more complete experience, setup with anaconda:
 
- - Install anaconda v4 (I couldn't get it to work with v5) e.g. using ```bash /nfs/dust/cms/user/elwoodad/Anaconda2-4.4.0-Linux-x86_64.sh```
+ - Install anaconda v4 (I couldn't get it to work with v5) e.g. using
+ 
+ ```bash /nfs/dust/cms/user/elwoodad/Anaconda2-4.4.0-Linux-x86_64.sh```
 
     - choose whether you want anaconda added to bashrc, overwriting system default packages (i didn't)
 
