@@ -1,6 +1,7 @@
 from keras.models import Sequential
-from keras.layers import Dense
+from keras.layers import Dense,Dropout
 from MlClasses.PerformanceTests import rocCurve
+from MlClasses.Config import Config
 import os
 
 def findLayerSize(layer,refSize):
@@ -18,8 +19,9 @@ class Dnn(object):
     def __init__(self,data,output=None):
         self.data = data
         self.output = output
+        self.config=Config(output=output)
 
-    def setup(self,hiddenLayers=[1.0]):
+    def setup(self,hiddenLayers=[1.0],dropOut=None):
 
         '''Setup the neural net. Input a list of hiddenlayers
         if you fill float takes as fraction of inputs+outputs
@@ -44,10 +46,14 @@ class Dnn(object):
         self.model.add(Dense(units=findLayerSize(hiddenLayers[0],refSize), 
             activation='relu', input_dim=inputSize))
 
+        if dropOut: self.model.add(Dropout(dropOut))
+
         #Add the extra hidden layers
         for layer in hiddenLayers[1:]:
             self.model.add(Dense(units=findLayerSize(hiddenLayers[0],refSize), 
                 activation='relu'))
+
+            if dropOut: self.model.add(Dropout(dropOut))
 
         #Add the output layer and choose the type of loss function
         #Choose the loss function based on whether it's binary or not
@@ -66,10 +72,23 @@ class Dnn(object):
         self.model.compile(loss=loss,
             optimizer='adam',metrics=['accuracy'])
 
-    def fit(self):
+        #Add stuff to the config
+        self.config.addToConfig('inputSize',inputSize)
+        self.config.addToConfig('outputSize',outputSize)
+        self.config.addToConfig('hiddenLayers',hiddenLayers)
+        self.config.addToConfig('dropOut',dropOut)
+        self.config.addToConfig('loss',loss)
+
+    def fit(self,epochs=20,batch_size=32,**kwargs):
 
         self.model.fit(self.data.X_train.as_matrix(), self.data.y_train.as_matrix(), 
-                epochs=20, batch_size=32)
+                epochs=epochs, batch_size=batch_size,**kwargs)
+
+        #Add stuff to the config
+        self.config.addToConfig('epochs',epochs)
+        self.config.addToConfig('batch_size',batch_size)
+        self.config.addToConfig('extra',kwargs)
+        self.config.saveConfig()
 
     def classificationReport(self):
 
