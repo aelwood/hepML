@@ -45,7 +45,7 @@ class Bdt(object):
         rocCurve(self.bdt.decision_function(self.data.X_train),self.data.y_train,output=self.output,append='_train')
 
     def compareTrainTest(self):
-        compareTrainTest(self.bdt,self.data.X_train,self.data.y_train,\
+        compareTrainTest(self.bdt.decision_function,self.data.X_train,self.data.y_train,\
                 self.data.X_test,self.data.y_test,self.output)
 
     def diagnostics(self):
@@ -58,7 +58,5 @@ class Bdt(object):
 
     def testPrediction(self):
         return self.bdt.decision_function(self.data.X_test)
-
-
 
 

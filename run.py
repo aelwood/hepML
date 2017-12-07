@@ -28,14 +28,14 @@ prepareInputs=False
 
 #ML options
 plotFeatureImportances=False
-doBDT=False
+doBDT=True
 doDNN=True
 
 dnnConfigs={
     'dnn':{'epochs':50,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0]},
-    'dnn2l':{'epochs':50,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.66]},
-    'dnndo':{'epochs':100,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0]},
-    'dnn2ldo':{'epochs':100,'batch_size':32,'dropOut':0.5,'hiddenLayers':[0.66,0.66]},
+    # 'dnn2l':{'epochs':50,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.66]},
+    # 'dnndo':{'epochs':100,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0]},
+    # 'dnn2ldo':{'epochs':100,'batch_size':32,'dropOut':0.5,'hiddenLayers':[0.66,0.66]},
         }
 
 if __name__=='__main__':

@@ -1,7 +1,7 @@
 from keras.models import Sequential
 from keras.layers import Dense,Dropout
 from keras.utils import plot_model
-from MlClasses.PerformanceTests import rocCurve
+from MlClasses.PerformanceTests import rocCurve,compareTrainTest
 from MlClasses.Config import Config
 import os
 
@@ -109,15 +109,16 @@ class Dnn(object):
         rocCurve(self.model.predict(self.data.X_test.as_matrix()), self.data.y_test,self.output)
         rocCurve(self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,self.output,append='_train')
 
-    # def compareTrainTest(self):
-    #     compareTrainTest(self.bdt,self.data.X_train,self.data.y_train,\
-    #             self.data.X_test,self.data.y_test,self.output)
-    #
+    def compareTrainTest(self):
+        compareTrainTest(self.model.predict,self.data.X_train.as_matrix(),self.data.y_train.as_matrix(),\
+                self.data.X_test.as_matrix(),self.data.y_test.as_matrix(),self.output)
+
     def diagnostics(self):
 
         self.saveConfig()
         self.classificationReport()
         self.rocCurve()
+        self.compareTrainTest()
 
     def testPrediction(self):
         return self.model.predict(self.data.X_test.as_matrix())
