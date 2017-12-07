@@ -1,5 +1,6 @@
 from keras.models import Sequential
 from keras.layers import Dense,Dropout
+from keras.utils import plot_model
 from MlClasses.PerformanceTests import rocCurve
 from MlClasses.Config import Config
 import os
@@ -88,6 +89,10 @@ class Dnn(object):
         self.config.addToConfig('epochs',epochs)
         self.config.addToConfig('batch_size',batch_size)
         self.config.addToConfig('extra',kwargs)
+
+    def saveConfig(self):
+
+        plot_model(self.model, to_file=os.path.join(self.output,'model.ps'))
         self.config.saveConfig()
 
     def classificationReport(self):
@@ -104,7 +109,13 @@ class Dnn(object):
         rocCurve(self.model.predict(self.data.X_test.as_matrix()), self.data.y_test,self.output)
         rocCurve(self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,self.output,append='_train')
 
+    # def compareTrainTest(self):
+    #     compareTrainTest(self.bdt,self.data.X_train,self.data.y_train,\
+    #             self.data.X_test,self.data.y_test,self.output)
+    #
     def diagnostics(self):
+
+        self.saveConfig()
         self.classificationReport()
         self.rocCurve()
 
