@@ -1,7 +1,7 @@
 from keras.models import Sequential
 from keras.layers import Dense,Dropout
 from keras.utils import plot_model
-from MlClasses.PerformanceTests import rocCurve,compareTrainTest
+from MlClasses.PerformanceTests import rocCurve,compareTrainTest,classificationReport
 from MlClasses.Config import Config
 import os
 
@@ -97,12 +97,20 @@ class Dnn(object):
 
     def classificationReport(self):
 
-        self.report = self.model.evaluate(self.data.X_test.as_matrix(), self.data.y_test.as_matrix(), batch_size=128)
 
         if not os.path.exists(self.output): os.makedirs(self.output)
         f=open(os.path.join(self.output,'classificationReport.txt'),'w')
-        f.write( 'Performance on test set:')
-        f.write(str(self.report))
+        f.write( 'Performance on test set:\n')
+        report = self.model.evaluate(self.data.X_test.as_matrix(), self.data.y_test.as_matrix(), batch_size=32)
+        classificationReport(self.model.predict_classes(self.data.X_test.as_matrix()),self.model.predict(self.data.X_test.as_matrix()),self.data.y_test,f)
+        f.write( '\nDNN Loss, Accuracy:\n')
+        f.write(str(report))
+
+        f.write( '\n\nPerformance on train set:\n')
+        report = self.model.evaluate(self.data.X_train.as_matrix(), self.data.y_train.as_matrix(), batch_size=32)
+        classificationReport(self.model.predict_classes(self.data.X_train.as_matrix()),self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,f)
+        f.write( '\nDNN Loss, Accuracy:\n')
+        f.write(str(report))
 
     def rocCurve(self):
 

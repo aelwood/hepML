@@ -1,4 +1,4 @@
-name: hepML 
+name: hepML
 channels:
 - nlesc
 - defaults
@@ -53,8 +53,9 @@ dependencies:
 - pixman=0.34.0=0
 - protobuf=3.4.0=py27_0
 - pycairo=1.10.0=py27_0
+- pydot=1.0.28=py27_0
 - pygpu=0.6.9=py27_0
-- pyparsing=2.2.0=py27_0
+- pyparsing=1.5.6=py27_0
 - pyqt=5.6.0=py27_2
 - pytables=3.4.2=np113py27_0
 - python=2.7.13=0
@@ -95,6 +96,9 @@ dependencies:
 - root=6.04=py2.7_gcc4.8.2
 - root_numpy=4.3.0=root6.04_py2.7
 - pip:
+  - gfal2-util==1.4.0
+  - ordereddict==1.2
+  - python-ldap==2.3.10
   - root-numpy==4.3.0.dev0
   - tables==3.4.2
 prefix: /nfs/dust/cms/user/elwoodad/anaconda2/envs/hepML

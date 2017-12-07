@@ -34,11 +34,11 @@ class Bdt(object):
         if not os.path.exists(self.output): os.makedirs(self.output)
         f=open(os.path.join(self.output,'classificationReport.txt'),'w')
         f.write( 'Performance on test set:')
-        classificationReport(self.bdt,self.data.X_test,self.data.y_test,f)
+        classificationReport(self.bdt.predict(self.data.X_test),self.bdt.decision_function(self.data.X_test),self.data.y_test,f)
 
         f.write( '\n' )
         f.write('Performance on training set:')
-        classificationReport(self.bdt,self.data.X_train,self.data.y_train,f)
+        classificationReport(self.bdt.predict(self.data.X_train),self.bdt.decision_function(self.data.X_train),self.data.y_train,f)
         
     def rocCurve(self):
         rocCurve(self.bdt.decision_function(self.data.X_test),self.data.y_test,output=self.output)

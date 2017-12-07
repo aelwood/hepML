@@ -11,6 +11,7 @@ class MlData(object):
         self.X = df.drop(classifier,axis=1)
 
         self.isSplit=False
+        self.standardised=False
 
     def split(self, evalSize=0.0, testSize=0.33):
         # (thanks Tim Head https://betatim.github.io/posts/sklearn-for-TMVA-users/ )
@@ -40,7 +41,7 @@ class MlData(object):
         self.X = self.X.loc[:,~self.X.columns.duplicated()]
 
 
-    def standardise(self):
+    def standardise(self): #Note that this does not change self.X or self.y
         '''Standardise the data to ensure the training occurs efficiently. 
         Normalises each dataset to have a mean of 0 and s.d. 1'''
 
@@ -53,12 +54,16 @@ class MlData(object):
         self.X_test = pd.DataFrame(self.scaler.transform(self.X_test),columns=self.X_test.columns,index=self.X_test.index)
         self.X_dev = pd.DataFrame(self.scaler.transform(self.X_dev),columns=self.X_dev.columns,index=self.X_dev.index)
 
+        self.standardised=True
+
 
     def unStandardise(self):
         '''Reverse the standardise operation'''
         self.X_train = pd.DataFrame(self.scaler.inverse_transform(self.X_train),columns=self.X_train.columns,index=self.X_train.index)
         self.X_test = pd.DataFrame(self.scaler.inverse_transform(self.X_test),columns=self.X_test.columns,index=self.X_test.index)
         self.X_dev = pd.DataFrame(self.scaler.inverse_transform(self.X_dev),columns=self.X_dev.columns,index=self.X_dev.index)
+
+        self.standardised=False
         pass
 
 

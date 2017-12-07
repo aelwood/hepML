@@ -3,11 +3,10 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-def classificationReport(clf,X_test,y_test,outputFile=None):
-    y_predicted = clf.predict(X_test)
+def classificationReport(y_predicted,clfResult,y_test,outputFile=None):
     report = classification_report(y_test, y_predicted,
                                             target_names=["background", "signal"])
-    auc= "Area under ROC curve: %.4f"%(roc_auc_score(y_test,clf.decision_function(X_test)))
+    auc= "Area under ROC curve: %.4f"%(roc_auc_score(y_test,clfResult))
 
     if outputFile:
         outputFile.write(report)
