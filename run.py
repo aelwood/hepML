@@ -28,14 +28,16 @@ prepareInputs=False
 
 #ML options
 plotFeatureImportances=False
-doBDT=True
+doBDT=False
 doDNN=True
 
 dnnConfigs={
-    'dnn':{'epochs':50,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0]},
-    # 'dnn2l':{'epochs':50,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.66]},
-    # 'dnndo':{'epochs':100,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0]},
-    # 'dnn2ldo':{'epochs':100,'batch_size':32,'dropOut':0.5,'hiddenLayers':[0.66,0.66]},
+    'dnn':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0]},
+    'dnn2l':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.66]},
+    'dnndo0p5':{'epochs':50,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0]},
+    'dnn2ldo0p5':{'epochs':50,'batch_size':32,'dropOut':0.5,'hiddenLayers':[0.66,0.66]},
+    'dnndo0p2':{'epochs':50,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0]},
+    'dnn2ldo0p2':{'epochs':50,'batch_size':32,'dropOut':0.2,'hiddenLayers':[0.66,0.66]},
         }
 
 if __name__=='__main__':

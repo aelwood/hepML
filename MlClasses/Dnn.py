@@ -1,9 +1,12 @@
+import matplotlib.pyplot as plt
+import os
+
 from keras.models import Sequential
 from keras.layers import Dense,Dropout
 from keras.utils import plot_model
+
 from MlClasses.PerformanceTests import rocCurve,compareTrainTest,classificationReport
 from MlClasses.Config import Config
-import os
 
 def findLayerSize(layer,refSize):
 
@@ -82,7 +85,10 @@ class Dnn(object):
 
     def fit(self,epochs=20,batch_size=32,**kwargs):
 
-        self.model.fit(self.data.X_train.as_matrix(), self.data.y_train.as_matrix(), 
+        #Fit the model and save the history for diagnostics
+        #additionally pass the testing data for further diagnostic results
+        self.history = self.model.fit(self.data.X_train.as_matrix(), self.data.y_train.as_matrix(), 
+                validation_data=(self.data.X_test.as_matrix(),self.data.y_test.as_matrix()),
                 epochs=epochs, batch_size=batch_size,**kwargs)
 
         #Add stuff to the config
@@ -92,11 +98,11 @@ class Dnn(object):
 
     def saveConfig(self):
 
+        if not os.path.exists(self.output): os.makedirs(self.output)
         plot_model(self.model, to_file=os.path.join(self.output,'model.ps'))
         self.config.saveConfig()
 
     def classificationReport(self):
-
 
         if not os.path.exists(self.output): os.makedirs(self.output)
         f=open(os.path.join(self.output,'classificationReport.txt'),'w')
@@ -104,7 +110,7 @@ class Dnn(object):
         report = self.model.evaluate(self.data.X_test.as_matrix(), self.data.y_test.as_matrix(), batch_size=32)
         classificationReport(self.model.predict_classes(self.data.X_test.as_matrix()),self.model.predict(self.data.X_test.as_matrix()),self.data.y_test,f)
         f.write( '\nDNN Loss, Accuracy:\n')
-        f.write(str(report))
+        f.write(str(report)) 
 
         f.write( '\n\nPerformance on train set:\n')
         report = self.model.evaluate(self.data.X_train.as_matrix(), self.data.y_train.as_matrix(), batch_size=32)
@@ -121,12 +127,37 @@ class Dnn(object):
         compareTrainTest(self.model.predict,self.data.X_train.as_matrix(),self.data.y_train.as_matrix(),\
                 self.data.X_test.as_matrix(),self.data.y_test.as_matrix(),self.output)
 
+    def plotHistory(self):
+
+        if not os.path.exists(self.output): os.makedirs(self.output)
+
+        #Plot the accuracy over the epochs
+        plt.plot(self.history.history['acc'],label='train')
+        plt.plot(self.history.history['val_acc'],label='test')
+        plt.title('model accuracy')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(loc='upper left')
+        plt.savefig(os.path.join(self.output,'accuracyEvolution.pdf'))
+        plt.clf()
+
+        #Plot the loss over the epochs
+        plt.plot(self.history.history['loss'],label='train')
+        plt.plot(self.history.history['val_loss'],label='test')
+        plt.title('model loss')
+        plt.ylabel('loss')
+        plt.xlabel('epoch')
+        plt.legend(loc='upper left')
+        plt.savefig(os.path.join(self.output,'lossEvolution.pdf'))
+        plt.clf()
+
     def diagnostics(self):
 
         self.saveConfig()
         self.classificationReport()
         self.rocCurve()
         self.compareTrainTest()
+        self.plotHistory()
 
     def testPrediction(self):
         return self.model.predict(self.data.X_test.as_matrix())
