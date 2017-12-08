@@ -25,6 +25,8 @@ class Dnn(object):
         self.output = output
         self.config=Config(output=output)
 
+        self.accuracy=None
+
     def setup(self,hiddenLayers=[1.0],dropOut=None):
 
         '''Setup the neural net. Input a list of hiddenlayers
@@ -48,7 +50,7 @@ class Dnn(object):
 
         #Add the first layer, taking the inputs
         self.model.add(Dense(units=findLayerSize(hiddenLayers[0],refSize), 
-            activation='relu', input_dim=inputSize))
+            activation='relu', input_dim=inputSize,name='input'))
 
         if dropOut: self.model.add(Dropout(dropOut))
 
@@ -108,6 +110,7 @@ class Dnn(object):
         f=open(os.path.join(self.output,'classificationReport.txt'),'w')
         f.write( 'Performance on test set:\n')
         report = self.model.evaluate(self.data.X_test.as_matrix(), self.data.y_test.as_matrix(), batch_size=32)
+        self.accuracy=report[1]
         classificationReport(self.model.predict_classes(self.data.X_test.as_matrix()),self.model.predict(self.data.X_test.as_matrix()),self.data.y_test,f)
         f.write( '\nDNN Loss, Accuracy:\n')
         f.write(str(report)) 
@@ -162,3 +165,10 @@ class Dnn(object):
     def testPrediction(self):
         return self.model.predict(self.data.X_test.as_matrix())
 
+    def getAccuracy(self):
+
+        if not self.accuracy:
+            self.accuracy = self.model.evaluate(self.data.X_test.as_matrix(), self.data.y_test.as_matrix(), batch_size=32)[1]
+
+        return self.accuracy
+        

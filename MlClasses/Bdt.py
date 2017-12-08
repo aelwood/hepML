@@ -9,6 +9,8 @@ class Bdt(object):
         self.data = data
         self.output = output
 
+        self.accuracy=None
+
     def setup(self,dtArgs={},bdtArgs={}):
 
         #Uses TMVA parameters as default
@@ -58,5 +60,10 @@ class Bdt(object):
 
     def testPrediction(self):
         return self.bdt.decision_function(self.data.X_test)
+
+    def getAccuracy(self):
+        if not self.accuracy:
+            self.accuracy = self.bdt.score(self.data.X_test,self.data.y_test)
+        return self.accuracy
 
 
