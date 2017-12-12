@@ -27,6 +27,53 @@ class Dnn(object):
 
         self.accuracy=None
 
+    #Add a function to create a model which can be called
+    #when using sklearn crossvalidation and hyperparameter
+    #tuning libraries
+    @staticmethod
+    def createModel(inputSize=None,outputSize=None,hiddenLayers=[1.0],dropOut=None,activation='relu',optimizer='adam'):
+
+        #check inputs are ok
+        assert inputSize and outputSize, 'Must provide input and output sizes'
+        assert len(hiddenLayers)>=1, 'Need at least one hidden layer'
+
+        refSize=inputSize+outputSize
+
+        model = Sequential()
+
+
+        #Add the first layer, taking the inputs
+        model.add(Dense(units=findLayerSize(hiddenLayers[0],refSize), 
+            activation=activation, input_dim=inputSize,name='input'))
+
+        if dropOut: model.add(Dropout(dropOut))
+
+        #Add the extra hidden layers
+        for layer in hiddenLayers[1:]:
+            model.add(Dense(units=findLayerSize(hiddenLayers[0],refSize), 
+                activation=activation))
+
+            if dropOut: model.add(Dropout(dropOut))
+
+        #Add the output layer and choose the type of loss function
+        #Choose the loss function based on whether it's binary or not
+        if outputSize==2: 
+            #It's better to choose a sigmoid function and one output layer for binary
+            # This is a special case of n>2 classification
+            model.add(Dense(1, activation='sigmoid'))
+            loss = 'binary_crossentropy'
+        else: 
+            #Softmax forces the outputs to sum to 1 so the score on each node
+            # can be interpreted as the probability of getting each class
+            model.add(Dense(outputSize, activation='softmax'))
+            loss = 'categorical_crossentropy'
+
+        #After the layers are added compile the model
+        model.compile(loss=loss,
+            optimizer=optimizer,metrics=['accuracy'])
+
+        return model
+
     def setup(self,hiddenLayers=[1.0],dropOut=None):
 
         '''Setup the neural net. Input a list of hiddenlayers
@@ -42,41 +89,12 @@ class Dnn(object):
 
         #Find number of unique outputs
         outputSize = len(self.data.y_train.unique())
-        refSize=inputSize+outputSize
 
-        self.model = Sequential()
-
-        assert len(hiddenLayers)>=1, 'Need at least one hidden layer'
-
-        #Add the first layer, taking the inputs
-        self.model.add(Dense(units=findLayerSize(hiddenLayers[0],refSize), 
-            activation='relu', input_dim=inputSize,name='input'))
-
-        if dropOut: self.model.add(Dropout(dropOut))
-
-        #Add the extra hidden layers
-        for layer in hiddenLayers[1:]:
-            self.model.add(Dense(units=findLayerSize(hiddenLayers[0],refSize), 
-                activation='relu'))
-
-            if dropOut: self.model.add(Dropout(dropOut))
-
-        #Add the output layer and choose the type of loss function
-        #Choose the loss function based on whether it's binary or not
-        if outputSize==2: 
-            #It's better to choose a sigmoid function and one output layer for binary
-            # This is a special case of n>2 classification
-            self.model.add(Dense(1, activation='sigmoid'))
-            loss = 'binary_crossentropy'
-        else: 
-            #Softmax forces the outputs to sum to 1 so the score on each node
-            # can be interpreted as the probability of getting each class
-            self.model.add(Dense(outputSize, activation='softmax'))
-            loss = 'categorical_crossentropy'
-
-        #After the layers are added compile the model
-        self.model.compile(loss=loss,
-            optimizer='adam',metrics=['accuracy'])
+        self.model=self.createModel(
+            inputSize=inputSize,outputSize=outputSize,
+            hiddenLayers=hiddenLayers,dropOut=dropOut,
+            activation='relu',optimizer='adam'
+            )
 
         #Add stuff to the config
         self.config.addToConfig('inputSize',inputSize)
