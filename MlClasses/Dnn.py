@@ -4,9 +4,17 @@ import os
 from keras.models import Sequential
 from keras.layers import Dense,Dropout
 from keras.utils import plot_model
+from keras.wrappers.scikit_learn import KerasClassifier
 
 from MlClasses.PerformanceTests import rocCurve,compareTrainTest,classificationReport
 from MlClasses.Config import Config
+
+#For cross validation
+from sklearn import preprocessing
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import cross_val_score
+
 
 def findLayerSize(layer,refSize):
 
@@ -26,6 +34,9 @@ class Dnn(object):
         self.config=Config(output=output)
 
         self.accuracy=None
+        self.crossValResults=None
+
+        self.defaultParams = {}
 
     #Add a function to create a model which can be called
     #when using sklearn crossvalidation and hyperparameter
@@ -34,13 +45,12 @@ class Dnn(object):
     def createModel(inputSize=None,outputSize=None,hiddenLayers=[1.0],dropOut=None,activation='relu',optimizer='adam'):
 
         #check inputs are ok
-        assert inputSize and outputSize, 'Must provide input and output sizes'
+        assert inputSize and outputSize, 'Must provide non-zero input and output sizes'
         assert len(hiddenLayers)>=1, 'Need at least one hidden layer'
 
         refSize=inputSize+outputSize
 
         model = Sequential()
-
 
         #Add the first layer, taking the inputs
         model.add(Dense(units=findLayerSize(hiddenLayers[0],refSize), 
@@ -95,15 +105,20 @@ class Dnn(object):
             hiddenLayers=hiddenLayers,dropOut=dropOut,
             activation='relu',optimizer='adam'
             )
+        self.defaultParams = dict(
+            inputSize=inputSize,outputSize=outputSize,
+            hiddenLayers=hiddenLayers,dropOut=dropOut,
+            activation='relu',optimizer='adam'
+            )
 
         #Add stuff to the config
         self.config.addToConfig('inputSize',inputSize)
         self.config.addToConfig('outputSize',outputSize)
         self.config.addToConfig('hiddenLayers',hiddenLayers)
         self.config.addToConfig('dropOut',dropOut)
-        self.config.addToConfig('loss',loss)
 
     def fit(self,epochs=20,batch_size=32,**kwargs):
+        '''Fit with training set and validate with test set'''
 
         #Fit the model and save the history for diagnostics
         #additionally pass the testing data for further diagnostic results
@@ -112,9 +127,39 @@ class Dnn(object):
                 epochs=epochs, batch_size=batch_size,**kwargs)
 
         #Add stuff to the config
+        self.config.addLine('Test train split')
         self.config.addToConfig('epochs',epochs)
         self.config.addToConfig('batch_size',batch_size)
         self.config.addToConfig('extra',kwargs)
+        self.config.addLine('')
+
+    def crossValidation(self,kfolds=10,epochs=20,batch_size=32):
+        '''K-means cross validation with data standardisation'''
+        #Have to be careful with this and redo the standardisation
+        #Do this on the development set, save the eval set for after HP tuning
+
+        #Check the development set isn't standardised
+        if self.data.standardisedDev:
+            self.data.unStandardise(justDev=True)
+
+        #Use a pipeline in sklearn to carry out standardisation just on the training set
+        estimators = []
+        estimators.append(('standardize', preprocessing.StandardScaler()))
+        estimators.append(('mlp', KerasClassifier(build_fn=self.createModel, 
+            epochs=epochs, batch_size=batch_size,verbose=0, **self.defaultParams))) #verbose=0
+        pipeline = Pipeline(estimators)
+
+        #Define the kfold parameters and run the cross validation
+        kfold = StratifiedKFold(n_splits=kfolds, shuffle=True, random_state=43)
+        self.crossValResults = cross_val_score(pipeline, self.data.X_dev.as_matrix(), self.data.y_dev.as_matrix(), cv=kfold)
+        print "Cross val results: %.2f%% (%.2f%%)" % (self.crossValResults.mean()*100, self.crossValResults.std()*100)
+
+        #Save the config
+        self.config.addLine('CrossValidation')
+        self.config.addToConfig('kfolds',kfolds)
+        self.config.addToConfig('epochs',epochs)
+        self.config.addToConfig('batch_size',batch_size)
+        self.config.addLine('')
 
     def saveConfig(self):
 
@@ -130,14 +175,18 @@ class Dnn(object):
         report = self.model.evaluate(self.data.X_test.as_matrix(), self.data.y_test.as_matrix(), batch_size=32)
         self.accuracy=report[1]
         classificationReport(self.model.predict_classes(self.data.X_test.as_matrix()),self.model.predict(self.data.X_test.as_matrix()),self.data.y_test,f)
-        f.write( '\nDNN Loss, Accuracy:\n')
+        f.write( '\n\nDNN Loss, Accuracy:\n')
         f.write(str(report)) 
 
         f.write( '\n\nPerformance on train set:\n')
         report = self.model.evaluate(self.data.X_train.as_matrix(), self.data.y_train.as_matrix(), batch_size=32)
         classificationReport(self.model.predict_classes(self.data.X_train.as_matrix()),self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,f)
-        f.write( '\nDNN Loss, Accuracy:\n')
+        f.write( '\n\nDNN Loss, Accuracy:\n')
         f.write(str(report))
+
+        if self.crossValResults is not None:
+            f.write( '\n\nCross Validation\n')
+            f.write("Cross val results: %.2f%% (%.2f%%)" % (self.crossValResults.mean()*100, self.crossValResults.std()*100))
 
     def rocCurve(self):
 

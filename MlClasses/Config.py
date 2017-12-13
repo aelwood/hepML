@@ -9,6 +9,9 @@ class Config(object):
     def addToConfig(self,name,variable):
         self.config = self.config+'\n'+name+'\t'+str(variable)
 
+    def addLine(self,line):
+        self.config = self.config+'\n'+line
+
     def saveConfig(self):
         if not self.output:
             print self.config
@@ -17,3 +20,4 @@ class Config(object):
             outF = open(os.path.join(self.output,'config.txt'),'w')
             outF.write(self.config)
             outF.close()
+

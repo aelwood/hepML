@@ -11,7 +11,8 @@ class MlData(object):
         self.X = df.drop(classifier,axis=1)
 
         self.isSplit=False
-        self.standardised=False
+        self.standardised=False #keep track of the train and test set standardisation
+        self.standardisedDev=False #keep track of the development test standardisation
 
     def split(self, evalSize=0.0, testSize=0.33):
         # (thanks Tim Head https://betatim.github.io/posts/sklearn-for-TMVA-users/ )
@@ -19,12 +20,12 @@ class MlData(object):
         # of the test set, which allows information to leak from the test set. An evaluation
         # set then allows fully unbiased testing.
         
-        if evalSize>0.0:
-            self.X_dev,self.X_eval, self.y_dev,self.y_eval = \
-                    train_test_split(self.X, self.y, test_size=evalSize, random_state=42)
-        else:
-            self.X_dev=self.X
-            self.y_dev=self.y
+        #if evalSize>0.0:
+        self.X_dev,self.X_eval, self.y_dev,self.y_eval = \
+                train_test_split(self.X, self.y, test_size=evalSize, random_state=42)
+        # else:
+        #     self.X_dev=self.X
+        #     self.y_dev=self.y
 
         self.X_train,self.X_test, self.y_train,self.y_test = \
                 train_test_split(self.X_dev, self.y_dev,test_size=testSize, random_state=492)
@@ -41,7 +42,7 @@ class MlData(object):
         self.X = self.X.loc[:,~self.X.columns.duplicated()]
 
 
-    def standardise(self): #Note that this does not change self.X or self.y
+    def standardise(self,standardiseDev=False): #Note that this does not change self.X or self.y or the development set
         '''Standardise the data to ensure the training occurs efficiently. 
         Normalises each dataset to have a mean of 0 and s.d. 1'''
 
@@ -49,21 +50,31 @@ class MlData(object):
             print 'Warning: you must split the data before standardising.'
             print 'This avoids information leaking from the train to test set'
         
-        self.scaler = preprocessing.StandardScaler().fit(self.X_train)
-        self.X_train = pd.DataFrame(self.scaler.transform(self.X_train),columns=self.X_train.columns,index=self.X_train.index)
-        self.X_test = pd.DataFrame(self.scaler.transform(self.X_test),columns=self.X_test.columns,index=self.X_test.index)
-        self.X_dev = pd.DataFrame(self.scaler.transform(self.X_dev),columns=self.X_dev.columns,index=self.X_dev.index)
+        if not self.standardised:
+            self.scaler = preprocessing.StandardScaler().fit(self.X_train)
+            self.X_train = pd.DataFrame(self.scaler.transform(self.X_train),columns=self.X_train.columns,index=self.X_train.index)
+            self.X_test = pd.DataFrame(self.scaler.transform(self.X_test),columns=self.X_test.columns,index=self.X_test.index)
+
+        if standardiseDev:
+            self.X_dev = pd.DataFrame(self.scaler.transform(self.X_dev),columns=self.X_dev.columns,index=self.X_dev.index)
+            self.X_eval = pd.DataFrame(self.scaler.transform(self.X_eval),columns=self.X_eval.columns,index=self.X_eval.index)
+            self.standardisedDev=True
+
 
         self.standardised=True
 
-
-    def unStandardise(self):
+    def unStandardise(self,justDev=False):
         '''Reverse the standardise operation'''
-        self.X_train = pd.DataFrame(self.scaler.inverse_transform(self.X_train),columns=self.X_train.columns,index=self.X_train.index)
-        self.X_test = pd.DataFrame(self.scaler.inverse_transform(self.X_test),columns=self.X_test.columns,index=self.X_test.index)
-        self.X_dev = pd.DataFrame(self.scaler.inverse_transform(self.X_dev),columns=self.X_dev.columns,index=self.X_dev.index)
+        if not justDev:
+            self.X_train = pd.DataFrame(self.scaler.inverse_transform(self.X_train),columns=self.X_train.columns,index=self.X_train.index)
+            self.X_test = pd.DataFrame(self.scaler.inverse_transform(self.X_test),columns=self.X_test.columns,index=self.X_test.index)
+            self.standardised=False
 
-        self.standardised=False
+        if self.standardisedDev:
+            self.X_dev = pd.DataFrame(self.scaler.inverse_transform(self.X_dev),columns=self.X_dev.columns,index=self.X_dev.index)
+            self.X_eval = pd.DataFrame(self.scaler.inverse_transform(self.X_eval),columns=self.X_eval.columns,index=self.X_eval.index)
+            self.standardisedDev=False
+
         pass
 
 

@@ -13,17 +13,29 @@ class ComparePerformances(object):
     def compareRoc(self,selectedResults=None,append=''):
 
         if selectedResults:
-            results = {k:self.models[k][0] for k in selectedResults+['truth']}
+            results = {k:self.models[k].testPrediction() for k in selectedResults}
         else:
-            results = {k:self.models[k][0] for k in self.models.keys()}
+            results = {k:self.models[k].testPrediction() for k in self.models.keys()}
+
+        #As the splitting is done with the same pseudorandom initialisation the test set is always the same
+        results['truth']=self.models.values()[0].data.y_test
 
         rocCurve(results,output=self.output,append=append)
         pass
 
     def rankMethods(self):
+
         accuracies={}
+        accuraciesCrossVal={}
+        accuraciesCrossValError={}
         for name,model in self.models.iteritems():
-            accuracies[name]=model[1]
+            accuracies[name]=model.accuracy
+            if model.crossValResults is not None:
+                accuraciesCrossVal[name]=model.crossValResults.mean()
+                accuraciesCrossValError[name]=model.crossValResults.std()
+            else:
+                accuraciesCrossVal[name]=0.
+                accuraciesCrossValError[name]=0.
 
         outFile = open(os.path.join(self.output,'accuracyRank.txt'),'w')
 
@@ -32,3 +44,9 @@ class ComparePerformances(object):
 
         outFile.close()
 
+        outFile = open(os.path.join(self.output,'accuracyRankCrossVal.txt'),'w')
+
+        for key, value in sorted(accuraciesCrossVal.iteritems(), key=lambda (k,v): (v,k)):
+            outFile.write( "%s: %s +/- %s\n" % (key, value, accuraciesCrossValError[key]))
+
+        outFile.close()
