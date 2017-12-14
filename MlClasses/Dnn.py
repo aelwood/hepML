@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
 import os
 
-from keras.models import Sequential
-from keras.layers import Dense,Dropout
 from keras.utils import plot_model
 from keras.wrappers.scikit_learn import KerasClassifier
 
 from MlClasses.PerformanceTests import rocCurve,compareTrainTest,classificationReport
 from MlClasses.Config import Config
+
+from MlFunctions.DnnFunctions import createDenseModel
 
 #For cross validation and HP tuning
 from sklearn import preprocessing
@@ -16,16 +16,6 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
 
-
-def findLayerSize(layer,refSize):
-
-    if isinstance(layer, float):
-        return int(layer*refSize)
-    elif isinstance(layer, int):
-        return layer
-    else:
-        print 'WARNING: layer must be int or float'
-        return None
 
 class Dnn(object):
 
@@ -42,48 +32,48 @@ class Dnn(object):
     #Add a function to create a model which can be called
     #when using sklearn crossvalidation and hyperparameter
     #tuning libraries
-    @staticmethod
-    def createModel(inputSize=None,outputSize=None,hiddenLayers=[1.0],dropOut=None,activation='relu',optimizer='adam'):
-
-        #check inputs are ok
-        assert inputSize and outputSize, 'Must provide non-zero input and output sizes'
-        assert len(hiddenLayers)>=1, 'Need at least one hidden layer'
-
-        refSize=inputSize+outputSize
-
-        model = Sequential()
-
-        #Add the first layer, taking the inputs
-        model.add(Dense(units=findLayerSize(hiddenLayers[0],refSize), 
-            activation=activation, input_dim=inputSize,name='input'))
-
-        if dropOut: model.add(Dropout(dropOut))
-
-        #Add the extra hidden layers
-        for layer in hiddenLayers[1:]:
-            model.add(Dense(units=findLayerSize(hiddenLayers[0],refSize), 
-                activation=activation))
-
-            if dropOut: model.add(Dropout(dropOut))
-
-        #Add the output layer and choose the type of loss function
-        #Choose the loss function based on whether it's binary or not
-        if outputSize==2: 
-            #It's better to choose a sigmoid function and one output layer for binary
-            # This is a special case of n>2 classification
-            model.add(Dense(1, activation='sigmoid'))
-            loss = 'binary_crossentropy'
-        else: 
-            #Softmax forces the outputs to sum to 1 so the score on each node
-            # can be interpreted as the probability of getting each class
-            model.add(Dense(outputSize, activation='softmax'))
-            loss = 'categorical_crossentropy'
-
-        #After the layers are added compile the model
-        model.compile(loss=loss,
-            optimizer=optimizer,metrics=['accuracy'])
-
-        return model
+    # @staticmethod
+    # def createModel(inputSize=None,outputSize=None,hiddenLayers=[1.0],dropOut=None,activation='relu',optimizer='adam'):
+    #
+    #     #check inputs are ok
+    #     assert inputSize and outputSize, 'Must provide non-zero input and output sizes'
+    #     assert len(hiddenLayers)>=1, 'Need at least one hidden layer'
+    #
+    #     refSize=inputSize+outputSize
+    #
+    #     model = Sequential()
+    #
+    #     #Add the first layer, taking the inputs
+    #     model.add(Dense(units=findLayerSize(hiddenLayers[0],refSize), 
+    #         activation=activation, input_dim=inputSize,name='input'))
+    #
+    #     if dropOut: model.add(Dropout(dropOut))
+    #
+    #     #Add the extra hidden layers
+    #     for layer in hiddenLayers[1:]:
+    #         model.add(Dense(units=findLayerSize(hiddenLayers[0],refSize), 
+    #             activation=activation))
+    #
+    #         if dropOut: model.add(Dropout(dropOut))
+    #
+    #     #Add the output layer and choose the type of loss function
+    #     #Choose the loss function based on whether it's binary or not
+    #     if outputSize==2: 
+    #         #It's better to choose a sigmoid function and one output layer for binary
+    #         # This is a special case of n>2 classification
+    #         model.add(Dense(1, activation='sigmoid'))
+    #         loss = 'binary_crossentropy'
+    #     else: 
+    #         #Softmax forces the outputs to sum to 1 so the score on each node
+    #         # can be interpreted as the probability of getting each class
+    #         model.add(Dense(outputSize, activation='softmax'))
+    #         loss = 'categorical_crossentropy'
+    #
+    #     #After the layers are added compile the model
+    #     model.compile(loss=loss,
+    #         optimizer=optimizer,metrics=['accuracy'])
+    #
+    #     return model
 
     def setup(self,hiddenLayers=[1.0],dropOut=None):
 
@@ -101,7 +91,7 @@ class Dnn(object):
         #Find number of unique outputs
         outputSize = len(self.data.y_train.unique())
 
-        self.model=self.createModel(
+        self.model=createDenseModel(
             inputSize=inputSize,outputSize=outputSize,
             hiddenLayers=hiddenLayers,dropOut=dropOut,
             activation='relu',optimizer='adam'
@@ -148,7 +138,7 @@ class Dnn(object):
         #Use a pipeline in sklearn to carry out standardisation just on the training set
         estimators = []
         estimators.append(('standardize', preprocessing.StandardScaler()))
-        estimators.append(('mlp', KerasClassifier(build_fn=self.createModel, 
+        estimators.append(('mlp', KerasClassifier(build_fn=createDenseModel, 
             epochs=epochs, batch_size=batch_size,verbose=0, **self.defaultParams))) #verbose=0
         pipeline = Pipeline(estimators)
 
@@ -178,7 +168,7 @@ class Dnn(object):
         #Use a pipeline in sklearn to carry out standardisation just on the training set
         estimators = []
         estimators.append(('standardize', preprocessing.StandardScaler()))
-        estimators.append(('mlp', KerasClassifier(build_fn=self.createModel, 
+        estimators.append(('mlp', KerasClassifier(build_fn=createDenseModel, 
             epochs=epochs, batch_size=batch_size,verbose=0, **self.defaultParams)))
         pipeline = Pipeline(estimators)
 
@@ -189,10 +179,10 @@ class Dnn(object):
         #Save the results
         if not os.path.exists(self.output): os.makedirs(self.output)
         outFile = open(os.path.join(self.output,'gridSearchResults.txt'),'w')
-        outFile.write("Best: %f using %s \n\n" % (grid_result.best_score_, grid_result.best_params_))
-        means = grid_result.cv_results_['mean_test_score']
-        stds = grid_result.cv_results_['std_test_score']
-        params = grid_result.cv_results_['params']
+        outFile.write("Best: %f using %s \n\n" % (self.gridResult.best_score_, self.gridResult.best_params_))
+        means = self.gridResult.cv_results_['mean_test_score']
+        stds = self.gridResult.cv_results_['std_test_score']
+        params = self.gridResult.cv_results_['params']
         for mean, stdev, param in zip(means, stds, params):
             outFile.write("%f (%f) with: %r\n" % (mean, stdev, param))
         outFile.close()

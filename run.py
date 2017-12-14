@@ -57,15 +57,15 @@ def hiddenLayerGrid(nLayers,nNodes):
     return hlg
 
 dnnGridParams = dict(
-        #epochs=[10,20,50],
-        #batch_size=[32,64,128], 
-        hiddenLayers=hiddenLayerGrid([1,2,3,4,5],[2.0,1.0,0.5]),
-        dropOut=[None,0.25,0.5],
-        #activation=['relu','sigmoid','tanh'],
-        #optimizer=['adam','sgd','rmsprop'],
-        #NOT IMPLEMENTED YET:
-        #learningRate=[0.5,1.0], 
-        #weightConstraint=[1.0,3.0,5.0]
+        # mlp__epochs=[10,20,50],
+        # mlp__batch_size=[32,64,128], 
+        mlp__hiddenLayers=hiddenLayerGrid([1,2,3,4,5],[2.0,1.0,0.5]),
+        mlp__dropOut=[None,0.25,0.5],
+        # mlp__activation=['relu','sigmoid','tanh'],
+        # mlp__optimizer=['adam','sgd','rmsprop'],
+        ## NOT IMPLEMENTED YET:
+        # mlp__learningRate=[0.5,1.0], 
+        # mlp__weightConstraint=[1.0,3.0,5.0]
         )
 
 if __name__=='__main__':
@@ -189,9 +189,9 @@ if __name__=='__main__':
             # 'gramHT':['signal','gram','HT'],
             #
             # #The 4 vectors only
-            # 'fourVector':['signal',
-            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
+            'fourVector':['signal',
+            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
             #
             # 'fourVectorBL':['signal','lep_type','selJetB',
             # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
@@ -210,11 +210,11 @@ if __name__=='__main__':
             # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','HT'],
             #
             # #A vanilla analysis with HL variables and lead 3 jets
-            # 'vanilla':['signal','HT','MET','MT','MT2W','n_jet','lep_type'
-            # 'n_bjet','sel_lep_pt','sel_lep_eta','sel_lep_phi',
-            # 'selJet_phi0','selJet_pt0','selJet_eta0','selJet_m0',
-            # 'selJet_phi1','selJet_pt1','selJet_eta1','selJet_m1',
-            # 'selJet_phi2','selJet_pt2','selJet_eta2','selJet_m2'],
+            'vanilla':['signal','HT','MET','MT','MT2W','n_jet','lep_type'
+            'n_bjet','sel_lep_pt','sel_lep_eta','sel_lep_phi',
+            'selJet_phi0','selJet_pt0','selJet_eta0','selJet_m0',
+            'selJet_phi1','selJet_pt1','selJet_eta1','selJet_m1',
+            'selJet_phi2','selJet_pt2','selJet_eta2','selJet_m2'],
 
             }
 
@@ -279,6 +279,7 @@ if __name__=='__main__':
 
             if doGridSearch:
                 dnn = Dnn(mlData,'testPlots/mlPlots/'+varSetName+'/dnnGridSearch')
+                dnn.setup()
                 dnn.gridSearch(param_grid=dnnGridParams,kfolds=3,epochs=20,batch_size=32,n_jobs=4)
                 pass
 
