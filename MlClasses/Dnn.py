@@ -136,6 +136,8 @@ class Dnn(object):
 
     def crossValidation(self,kfolds=3,epochs=20,batch_size=32,n_jobs=4):
         '''K-means cross validation with data standardisation'''
+        #Reference: https://machinelearningmastery.com/binary-classification-tutorial-with-the-keras-deep-learning-library/
+
         #Have to be careful with this and redo the standardisation
         #Do this on the development set, save the eval set for after HP tuning
 
@@ -167,6 +169,7 @@ class Dnn(object):
         making use of kfolds cross validation.
         Pass a dictionary of lists of parameters to test on. Choose number of cores
         to run on with n_jobs, -1 is all of them'''
+        #Reference: https://machinelearningmastery.com/grid-search-hyperparameters-deep-learning-models-python-keras/
 
         #Check the development set isn't standardised
         if self.data.standardisedDev:
@@ -179,7 +182,20 @@ class Dnn(object):
             epochs=epochs, batch_size=batch_size,verbose=0, **self.defaultParams)))
         pipeline = Pipeline(estimators)
 
+        #Setup and fit the grid search, choosing cross validation params and N cores
         grid = GridSearchCV(estimator=pipeline,param_grid=param_grid,cv=kfolds,n_jobs=n_jobs)
+        self.gridResult = grid.fit(self.data.X_dev.as_matrix(),self.data.y_dev.as_matrix())
+
+        #Save the results
+        if not os.path.exists(self.output): os.makedirs(self.output)
+        outFile = open(os.path.join(self.output,'gridSearchResults.txt'),'w')
+        outFile.write("Best: %f using %s \n\n" % (grid_result.best_score_, grid_result.best_params_))
+        means = grid_result.cv_results_['mean_test_score']
+        stds = grid_result.cv_results_['std_test_score']
+        params = grid_result.cv_results_['params']
+        for mean, stdev, param in zip(means, stds, params):
+            outFile.write("%f (%f) with: %r\n" % (mean, stdev, param))
+        outFile.close()
 
     def saveConfig(self):
 

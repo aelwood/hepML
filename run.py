@@ -30,7 +30,9 @@ prepareInputs=False
 plotFeatureImportances=False
 doBDT=False
 doDNN=True
+doGridSearch=True #if this is true do a grid search, if not use the configs
 
+#If not doing the grid search
 dnnConfigs={
     'dnn':{'epochs':10,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0]},
     'dnn2l':{'epochs':10,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0]},
@@ -44,6 +46,27 @@ dnnConfigs={
     # 'dnn2lSmall':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.3]},
     # 'dnn3lSmall':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.5,0.3]},
         }
+
+#If doing the grid search
+def hiddenLayerGrid(nLayers,nNodes):
+    hlg=[]
+    for nn in nNodes:
+        for nl in nLayers:
+            hlg.append([nn for x in range(nl)])
+        pass
+    return hlg
+
+dnnGridParams = dict(
+        #epochs=[10,20,50],
+        #batch_size=[32,64,128], 
+        hiddenLayers=hiddenLayerGrid([1,2,3,4,5],[2.0,1.0,0.5]),
+        dropOut=[None,0.25,0.5],
+        #activation=['relu','sigmoid','tanh'],
+        #optimizer=['adam','sgd','rmsprop'],
+        #NOT IMPLEMENTED YET:
+        #learningRate=[0.5,1.0], 
+        #weightConstraint=[1.0,3.0,5.0]
+        )
 
 if __name__=='__main__':
 
@@ -157,41 +180,41 @@ if __name__=='__main__':
             #Just the gram matrix, with or without b info
             'gram':['signal','gram'],
 
-            'gramBL':['signal','gram','selJetB','lep_type'],
-
-            'gramMT':['signal','gram','MT'],
-
-            'gramMT2W':['signal','gram','MT2W'],
-
-            'gramHT':['signal','gram','HT'],
-
-            #The 4 vectors only
-            'fourVector':['signal',
-            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
-
-            'fourVectorBL':['signal','lep_type','selJetB',
-            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
-
-            'fourVectorMT':['signal',
-            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','MT'],
-
-            'fourVectorMT2W':['signal',
-            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','MT2W'],
-
-            'fourVectorHT':['signal',
-            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','HT'],
-
-            #A vanilla analysis with HL variables and lead 3 jets
-            'vanilla':['signal','HT','MET','MT','MT2W','n_jet','lep_type'
-            'n_bjet','sel_lep_pt','sel_lep_eta','sel_lep_phi',
-            'selJet_phi0','selJet_pt0','selJet_eta0','selJet_m0',
-            'selJet_phi1','selJet_pt1','selJet_eta1','selJet_m1',
-            'selJet_phi2','selJet_pt2','selJet_eta2','selJet_m2'],
+            # 'gramBL':['signal','gram','selJetB','lep_type'],
+            #
+            # 'gramMT':['signal','gram','MT'],
+            #
+            # 'gramMT2W':['signal','gram','MT2W'],
+            #
+            # 'gramHT':['signal','gram','HT'],
+            #
+            # #The 4 vectors only
+            # 'fourVector':['signal',
+            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
+            #
+            # 'fourVectorBL':['signal','lep_type','selJetB',
+            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
+            #
+            # 'fourVectorMT':['signal',
+            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','MT'],
+            #
+            # 'fourVectorMT2W':['signal',
+            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','MT2W'],
+            #
+            # 'fourVectorHT':['signal',
+            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','HT'],
+            #
+            # #A vanilla analysis with HL variables and lead 3 jets
+            # 'vanilla':['signal','HT','MET','MT','MT2W','n_jet','lep_type'
+            # 'n_bjet','sel_lep_pt','sel_lep_eta','sel_lep_phi',
+            # 'selJet_phi0','selJet_pt0','selJet_eta0','selJet_m0',
+            # 'selJet_phi1','selJet_pt1','selJet_eta1','selJet_m1',
+            # 'selJet_phi2','selJet_pt2','selJet_eta2','selJet_m2'],
 
             }
 
@@ -234,90 +257,76 @@ if __name__=='__main__':
 
         mlData.prepare(evalSize=0.0,testSize=0.33)
 
-
         if doBDT:
 
-            #Start with a BDT from sklearn (ala TMVA)
-            print 'Defining and fitting BDT'
-            bdt = Bdt(mlData,'testPlots/mlPlots/'+varSetName+'/bdt')
-            bdt.setup()
-            bdt.fit()
+            if doGridSearch:
+                pass
 
-            #and carry out a diagnostic of the results
-            print ' > Producing diagnostics'
-            bdt.diagnostics()
+            else:
+                #Start with a BDT from sklearn (ala TMVA)
+                print 'Defining and fitting BDT'
+                bdt = Bdt(mlData,'testPlots/mlPlots/'+varSetName+'/bdt')
+                bdt.setup()
+                bdt.fit()
 
-            trainedModels[varSetName+'_bdt']=bdt
+                #and carry out a diagnostic of the results
+                print ' > Producing diagnostics'
+                bdt.diagnostics()
+
+                trainedModels[varSetName+'_bdt']=bdt
 
         if doDNN:
 
-            #Now lets move on to a deep neural net 
-            
-            # #Start with a 1 layer
-            # print 'Defining and fitting DNN'
-            # dnn = Dnn(mlData,'testPlots/mlPlots/'+varSetName+'/dnn')
-            # dnn.setup()
-            # dnn.fit(epochs=50,batch_size=32)
-            #
-            # print ' > Producing diagnostics'
-            # dnn.diagnostics()
-            #
-            # trainedModels[varSetName+'_dnn']=dnn.testPrediction()
-            #
-            # #Now do 2 layer
-            # print ''
-            # print 'Defining and fitting DNN with 2 layers'
-            # dnn2l = Dnn(mlData,'testPlots/mlPlots/'+varSetName+'/dnn2l')
-            # dnn2l.setup(hiddenLayers=[0.66,0.66])
-            # dnn2l.fit(epochs=50,batch_size=32)
-            #
-            # print ' > Producing diagnostics'
-            # dnn2l.diagnostics()
-            #
-            # trainedModels[varSetName+'_dnn2l']=dnn2l.testPrediction()
-            #
+            if doGridSearch:
+                dnn = Dnn(mlData,'testPlots/mlPlots/'+varSetName+'/dnnGridSearch')
+                dnn.gridSearch(param_grid=dnnGridParams,kfolds=3,epochs=20,batch_size=32,n_jobs=4)
+                pass
 
-            for name,config in dnnConfigs.iteritems():
-                print 'Defining and fitting DNN',name
-                dnn = Dnn(mlData,'testPlots/mlPlots/'+varSetName+'/'+name)
-                dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'])
-                dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
-                dnn.crossValidation(kfolds=5,epochs=config['epochs'],batch_size=config['batch_size'])
+            else:
+                #Now lets move on to a deep neural net 
+                for name,config in dnnConfigs.iteritems():
+                    print 'Defining and fitting DNN',name
+                    dnn = Dnn(mlData,'testPlots/mlPlots/'+varSetName+'/'+name)
+                    dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'])
+                    dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
+                    dnn.crossValidation(kfolds=5,epochs=config['epochs'],batch_size=config['batch_size'])
 
-                print ' > Producing diagnostics'
-                dnn.diagnostics()
+                    print ' > Producing diagnostics'
+                    dnn.diagnostics()
 
-                trainedModels[varSetName+'_'+name]=dnn
+                    trainedModels[varSetName+'_'+name]=dnn
 
-            pass
+                pass
 
     pass # end of variable set loop
 
-    #Now compare all the different versions
-    compareMl = ComparePerformances(trainedModels,output='testPlots/mlPlots/comparisons')
+    if not doGridSearch:
 
-    compareMl.compareRoc(append='_all')
-    compareMl.rankMethods()
+        #Now compare all the different versions
+        compareMl = ComparePerformances(trainedModels,output='testPlots/mlPlots/comparisons')
 
-    compareMl.compareRoc(['gram_dnn','gramMT_dnn','gramHT_dnn','gramMT2W_dnn','gramBL_dnn'],append='_gramOnlyDNN')
-    compareMl.compareRoc(['gram_dnn2l','gramMT_dnn2l','gramHT_dnn2l','gramMT2W_dnn2l','gramBL_dnn2l'],append='_gramOnlyDNN2l')
-    compareMl.compareRoc(['gram_dnn2ldo0p2','gramMT_dnn2ldo0p2','gramHT_dnn2ldo0p2','gramMT2W_dnn2ldo0p2','gramBL_dnn2ldo0p2'],append='_gramOnlyDNN2ldo0p2')
-    compareMl.compareRoc(['gram_dnn3ldo0p2','gramMT_dnn3ldo0p2','gramHT_dnn3ldo0p2','gramMT2W_dnn3ldo0p2','gramBL_dnn3ldo0p2'],append='_gramOnlyDNN3ldo0p2')
-    #compareMl.compareRoc(['gram_bdt','gramMT_bdt','gramHT_bdt','gramMT2W_bdt','gramBL_bdt'], append='_gramOnlyBDT')
+        compareMl.compareRoc(append='_all')
+        compareMl.rankMethods()
 
-    compareMl.compareRoc(['fourVector_dnn','fourVectorMT_dnn','fourVectorHT_dnn','fourVectorMT2W_dnn','fourVectorBL_dnn'],append='_fourVectorOnlyDNN')
-    compareMl.compareRoc(['fourVector_dnn2l','fourVectorMT_dnn2l','fourVectorHT_dnn2l','fourVectorMT2W_dnn2l','fourVectorBL_dnn2l'],append='_fourVectorOnlyDNN2l')
-    compareMl.compareRoc(['fourVector_dnn2ldo0p2','fourVectorMT_dnn2ldo0p2','fourVectorHT_dnn2ldo0p2','fourVectorMT2W_dnn2ldo0p2','fourVectorBL_dnn2ldo0p2'],append='_fourVectorOnlyDNN2ldo0p2')
-    compareMl.compareRoc(['fourVector_dnn3ldo0p2','fourVectorMT_dnn3ldo0p2','fourVectorHT_dnn3ldo0p2','fourVectorMT2W_dnn3ldo0p2','fourVectorBL_dnn3ldo0p2'],append='_fourVectorOnlyDNN3ldo0p2')
-    #compareMl.compareRoc(['fourVector_bdt','fourVectorMT_bdt','fourVectorHT_bdt','fourVectorMT2W_bdt','fourVectorBL_bdt'], append='_fourVectorOnlyBDT')
+        compareMl.compareRoc(['gram_dnn','gramMT_dnn','gramHT_dnn','gramMT2W_dnn','gramBL_dnn'],append='_gramOnlyDNN')
+        compareMl.compareRoc(['gram_dnn2l','gramMT_dnn2l','gramHT_dnn2l','gramMT2W_dnn2l','gramBL_dnn2l'],append='_gramOnlyDNN2l')
+        compareMl.compareRoc(['gram_dnn2ldo0p2','gramMT_dnn2ldo0p2','gramHT_dnn2ldo0p2','gramMT2W_dnn2ldo0p2','gramBL_dnn2ldo0p2'],append='_gramOnlyDNN2ldo0p2')
+        compareMl.compareRoc(['gram_dnn3ldo0p2','gramMT_dnn3ldo0p2','gramHT_dnn3ldo0p2','gramMT2W_dnn3ldo0p2','gramBL_dnn3ldo0p2'],append='_gramOnlyDNN3ldo0p2')
+        #compareMl.compareRoc(['gram_bdt','gramMT_bdt','gramHT_bdt','gramMT2W_bdt','gramBL_bdt'], append='_gramOnlyBDT')
 
-    # compareMl.compareRoc(['gram_dnn','gram_dnn2l','gram_bdt',
-    #     'fourVector_dnn','fourVector_dnn2l','fourVector_bdt',
-    #     'vanilla_dnn','vanilla_dnn2l','vanilla_bdt'],append='_vanillaComparisons')
+        compareMl.compareRoc(['fourVector_dnn','fourVectorMT_dnn','fourVectorHT_dnn','fourVectorMT2W_dnn','fourVectorBL_dnn'],append='_fourVectorOnlyDNN')
+        compareMl.compareRoc(['fourVector_dnn2l','fourVectorMT_dnn2l','fourVectorHT_dnn2l','fourVectorMT2W_dnn2l','fourVectorBL_dnn2l'],append='_fourVectorOnlyDNN2l')
+        compareMl.compareRoc(['fourVector_dnn2ldo0p2','fourVectorMT_dnn2ldo0p2','fourVectorHT_dnn2ldo0p2','fourVectorMT2W_dnn2ldo0p2','fourVectorBL_dnn2ldo0p2'],append='_fourVectorOnlyDNN2ldo0p2')
+        compareMl.compareRoc(['fourVector_dnn3ldo0p2','fourVectorMT_dnn3ldo0p2','fourVectorHT_dnn3ldo0p2','fourVectorMT2W_dnn3ldo0p2','fourVectorBL_dnn3ldo0p2'],append='_fourVectorOnlyDNN3ldo0p2')
+        #compareMl.compareRoc(['fourVector_bdt','fourVectorMT_bdt','fourVectorHT_bdt','fourVectorMT2W_bdt','fourVectorBL_bdt'], append='_fourVectorOnlyBDT')
+
+        # compareMl.compareRoc(['gram_dnn','gram_dnn2l','gram_bdt',
+        #     'fourVector_dnn','fourVector_dnn2l','fourVector_bdt',
+        #     'vanilla_dnn','vanilla_dnn2l','vanilla_bdt'],append='_vanillaComparisons')
 
 
-    #DNN study
-    # compareMl = ComparePerformances(trainedModels,output='testPlots/mlPlots/dnnStudy')
-    # compareMl.compareRoc(append='_all')
-    # compareMl.rankMethods()
+        #DNN study
+        # compareMl = ComparePerformances(trainedModels,output='testPlots/mlPlots/dnnStudy')
+        # compareMl.compareRoc(append='_all')
+        # compareMl.rankMethods()
 
