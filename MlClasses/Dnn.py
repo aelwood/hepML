@@ -9,11 +9,12 @@ from keras.wrappers.scikit_learn import KerasClassifier
 from MlClasses.PerformanceTests import rocCurve,compareTrainTest,classificationReport
 from MlClasses.Config import Config
 
-#For cross validation
+#For cross validation and HP tuning
 from sklearn import preprocessing
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV
 
 
 def findLayerSize(layer,refSize):
@@ -133,7 +134,7 @@ class Dnn(object):
         self.config.addToConfig('extra',kwargs)
         self.config.addLine('')
 
-    def crossValidation(self,kfolds=10,epochs=20,batch_size=32):
+    def crossValidation(self,kfolds=3,epochs=20,batch_size=32,n_jobs=4):
         '''K-means cross validation with data standardisation'''
         #Have to be careful with this and redo the standardisation
         #Do this on the development set, save the eval set for after HP tuning
@@ -151,7 +152,7 @@ class Dnn(object):
 
         #Define the kfold parameters and run the cross validation
         kfold = StratifiedKFold(n_splits=kfolds, shuffle=True, random_state=43)
-        self.crossValResults = cross_val_score(pipeline, self.data.X_dev.as_matrix(), self.data.y_dev.as_matrix(), cv=kfold)
+        self.crossValResults = cross_val_score(pipeline, self.data.X_dev.as_matrix(), self.data.y_dev.as_matrix(), cv=kfold,n_jobs=n_jobs)
         print "Cross val results: %.2f%% (%.2f%%)" % (self.crossValResults.mean()*100, self.crossValResults.std()*100)
 
         #Save the config
@@ -160,6 +161,25 @@ class Dnn(object):
         self.config.addToConfig('epochs',epochs)
         self.config.addToConfig('batch_size',batch_size)
         self.config.addLine('')
+
+    def gridSearch(self,param_grid,kfolds=3,epochs=20,batch_size=32,n_jobs=4):
+        '''Implementation of the sklearn grid search for hyper parameter tuning, 
+        making use of kfolds cross validation.
+        Pass a dictionary of lists of parameters to test on. Choose number of cores
+        to run on with n_jobs, -1 is all of them'''
+
+        #Check the development set isn't standardised
+        if self.data.standardisedDev:
+            self.data.unStandardise(justDev=True)
+        
+        #Use a pipeline in sklearn to carry out standardisation just on the training set
+        estimators = []
+        estimators.append(('standardize', preprocessing.StandardScaler()))
+        estimators.append(('mlp', KerasClassifier(build_fn=self.createModel, 
+            epochs=epochs, batch_size=batch_size,verbose=0, **self.defaultParams)))
+        pipeline = Pipeline(estimators)
+
+        grid = GridSearchCV(estimator=pipeline,param_grid=param_grid,cv=kfolds,n_jobs=n_jobs)
 
     def saveConfig(self):
 

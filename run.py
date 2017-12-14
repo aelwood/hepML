@@ -32,14 +32,14 @@ doBDT=False
 doDNN=True
 
 dnnConfigs={
-    'dnn':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0]},
-    # 'dnn2l':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0]},
-    # 'dnn3l':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0,1.0]},
-    #'dnndo0p5':{'epochs':20,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0]},
-    #'dnn2ldo0p5':{'epochs':20,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0,0.5]},
-    #'dnndo0p2':{'epochs':20,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0]},
-    'dnn2ldo0p2':{'epochs':20,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0]},
-    'dnn3ldo0p2':{'epochs':20,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0,1.0]},
+    'dnn':{'epochs':10,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0]},
+    'dnn2l':{'epochs':10,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0]},
+    'dnn3l':{'epochs':10,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0,1.0]},
+    'dnndo0p5':{'epochs':10,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0]},
+    'dnn2ldo0p5':{'epochs':10,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0,0.5]},
+    'dnndo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0]},
+    'dnn2ldo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0]},
+    'dnn3ldo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0,1.0]},
     # 'dnnSmall':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[0.3]},
     # 'dnn2lSmall':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.3]},
     # 'dnn3lSmall':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.5,0.3]},
@@ -157,34 +157,34 @@ if __name__=='__main__':
             #Just the gram matrix, with or without b info
             'gram':['signal','gram'],
 
-            # 'gramBL':['signal','gram','selJetB','lep_type'],
-            #
-            # 'gramMT':['signal','gram','MT'],
-            #
-            # 'gramMT2W':['signal','gram','MT2W'],
-            #
-            # 'gramHT':['signal','gram','HT'],
+            'gramBL':['signal','gram','selJetB','lep_type'],
+
+            'gramMT':['signal','gram','MT'],
+
+            'gramMT2W':['signal','gram','MT2W'],
+
+            'gramHT':['signal','gram','HT'],
 
             #The 4 vectors only
             'fourVector':['signal',
             'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
             'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
 
-            # 'fourVectorBL':['signal','lep_type','selJetB',
-            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
-            #
-            # 'fourVectorMT':['signal',
-            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','MT'],
-            #
-            # 'fourVectorMT2W':['signal',
-            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','MT2W'],
-            #
-            # 'fourVectorHT':['signal',
-            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','HT'],
+            'fourVectorBL':['signal','lep_type','selJetB',
+            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
+
+            'fourVectorMT':['signal',
+            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','MT'],
+
+            'fourVectorMT2W':['signal',
+            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','MT2W'],
+
+            'fourVectorHT':['signal',
+            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','HT'],
 
             #A vanilla analysis with HL variables and lead 3 jets
             'vanilla':['signal','HT','MET','MT','MT2W','n_jet','lep_type'
@@ -294,26 +294,30 @@ if __name__=='__main__':
     pass # end of variable set loop
 
     #Now compare all the different versions
-    # compareMl = ComparePerformances(trainedModels,output='testPlots/mlPlots/comparisons')
-    #
-    # compareMl.compareRoc(append='_all')
-    # compareMl.rankMethods()
-    #
-    # compareMl.compareRoc(['gram_dnn','gramMT_dnn','gramHT_dnn','gramMT2W_dnn','gramBL_dnn'],append='_gramOnlyDNN')
-    # compareMl.compareRoc(['gram_dnn2l','gramMT_dnn2l','gramHT_dnn2l','gramMT2W_dnn2l','gramBL_dnn2l'],append='_gramOnlyDNN2l')
-    # compareMl.compareRoc(['gram_bdt','gramMT_bdt','gramHT_bdt','gramMT2W_bdt','gramBL_bdt'], append='_gramOnlyBDT')
-    #
-    # compareMl.compareRoc(['fourVector_dnn','fourVectorMT_dnn','fourVectorHT_dnn','fourVectorMT2W_dnn','fourVectorBL_dnn'],append='_fourVectorOnlyDNN')
-    # compareMl.compareRoc(['fourVector_dnn2l','fourVectorMT_dnn2l','fourVectorHT_dnn2l','fourVectorMT2W_dnn2l','fourVectorBL_dnn2l'],append='_fourVectorOnlyDNN2l')
-    # compareMl.compareRoc(['fourVector_bdt','fourVectorMT_bdt','fourVectorHT_bdt','fourVectorMT2W_bdt','fourVectorBL_bdt'], append='_fourVectorOnlyBDT')
-    #
+    compareMl = ComparePerformances(trainedModels,output='testPlots/mlPlots/comparisons')
+
+    compareMl.compareRoc(append='_all')
+    compareMl.rankMethods()
+
+    compareMl.compareRoc(['gram_dnn','gramMT_dnn','gramHT_dnn','gramMT2W_dnn','gramBL_dnn'],append='_gramOnlyDNN')
+    compareMl.compareRoc(['gram_dnn2l','gramMT_dnn2l','gramHT_dnn2l','gramMT2W_dnn2l','gramBL_dnn2l'],append='_gramOnlyDNN2l')
+    compareMl.compareRoc(['gram_dnn2ldo0p2','gramMT_dnn2ldo0p2','gramHT_dnn2ldo0p2','gramMT2W_dnn2ldo0p2','gramBL_dnn2ldo0p2'],append='_gramOnlyDNN2ldo0p2')
+    compareMl.compareRoc(['gram_dnn3ldo0p2','gramMT_dnn3ldo0p2','gramHT_dnn3ldo0p2','gramMT2W_dnn3ldo0p2','gramBL_dnn3ldo0p2'],append='_gramOnlyDNN3ldo0p2')
+    #compareMl.compareRoc(['gram_bdt','gramMT_bdt','gramHT_bdt','gramMT2W_bdt','gramBL_bdt'], append='_gramOnlyBDT')
+
+    compareMl.compareRoc(['fourVector_dnn','fourVectorMT_dnn','fourVectorHT_dnn','fourVectorMT2W_dnn','fourVectorBL_dnn'],append='_fourVectorOnlyDNN')
+    compareMl.compareRoc(['fourVector_dnn2l','fourVectorMT_dnn2l','fourVectorHT_dnn2l','fourVectorMT2W_dnn2l','fourVectorBL_dnn2l'],append='_fourVectorOnlyDNN2l')
+    compareMl.compareRoc(['fourVector_dnn2ldo0p2','fourVectorMT_dnn2ldo0p2','fourVectorHT_dnn2ldo0p2','fourVectorMT2W_dnn2ldo0p2','fourVectorBL_dnn2ldo0p2'],append='_fourVectorOnlyDNN2ldo0p2')
+    compareMl.compareRoc(['fourVector_dnn3ldo0p2','fourVectorMT_dnn3ldo0p2','fourVectorHT_dnn3ldo0p2','fourVectorMT2W_dnn3ldo0p2','fourVectorBL_dnn3ldo0p2'],append='_fourVectorOnlyDNN3ldo0p2')
+    #compareMl.compareRoc(['fourVector_bdt','fourVectorMT_bdt','fourVectorHT_bdt','fourVectorMT2W_bdt','fourVectorBL_bdt'], append='_fourVectorOnlyBDT')
+
     # compareMl.compareRoc(['gram_dnn','gram_dnn2l','gram_bdt',
     #     'fourVector_dnn','fourVector_dnn2l','fourVector_bdt',
     #     'vanilla_dnn','vanilla_dnn2l','vanilla_bdt'],append='_vanillaComparisons')
-    #
+
 
     #DNN study
-    compareMl = ComparePerformances(trainedModels,output='testPlots/mlPlots/dnnStudy')
-    compareMl.compareRoc(append='_all')
-    compareMl.rankMethods()
+    # compareMl = ComparePerformances(trainedModels,output='testPlots/mlPlots/dnnStudy')
+    # compareMl.compareRoc(append='_all')
+    # compareMl.rankMethods()
 
