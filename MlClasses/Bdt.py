@@ -74,6 +74,11 @@ class Bdt(object):
             outFile.write("%f (%f) with: %r\n" % (mean, stdev, param))
         outFile.close()
 
+    def saveConfig(self):
+
+        if not os.path.exists(self.output): os.makedirs(self.output)
+        self.config.saveConfig()
+
     def classificationReport(self):
         if not os.path.exists(self.output): os.makedirs(self.output)
         f=open(os.path.join(self.output,'classificationReport.txt'),'w')

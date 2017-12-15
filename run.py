@@ -261,7 +261,7 @@ if __name__=='__main__':
         #Split the development set into training and testing
         #(forgetting about evaluation for now)
 
-        mlData.prepare(evalSize=0.2,testSize=0.33)
+        mlData.prepare(evalSize=0.2,testSize=0.33,limitSize=1000)
 
         if doBDT:
 

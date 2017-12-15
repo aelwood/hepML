@@ -14,15 +14,20 @@ class MlData(object):
         self.standardised=False #keep track of the train and test set standardisation
         self.standardisedDev=False #keep track of the development test standardisation
 
-    def split(self, evalSize=0.0, testSize=0.33):
+    def split(self, evalSize=0.0, testSize=0.33,limitSize=None):
         # (thanks Tim Head https://betatim.github.io/posts/sklearn-for-TMVA-users/ )
         # An evaluation set is useful when hyperparameters are optimised based on the performance 
         # of the test set, which allows information to leak from the test set. An evaluation
         # set then allows fully unbiased testing.
         
         #if evalSize>0.0:
-        self.X_dev,self.X_eval, self.y_dev,self.y_eval = \
-                train_test_split(self.X, self.y, test_size=evalSize, random_state=42)
+        if limitSize:
+            self.X_dev,self.X_eval, self.y_dev,self.y_eval = \
+                    train_test_split(self.X, self.y, test_size=int(evalSize*limitSize),
+                            train_size=int((1-evalSize)*limitSize), random_state=42)
+        else:
+            self.X_dev,self.X_eval, self.y_dev,self.y_eval = \
+                    train_test_split(self.X, self.y, test_size=evalSize, random_state=42)
         # else:
         #     self.X_dev=self.X
         #     self.y_dev=self.y
@@ -78,10 +83,10 @@ class MlData(object):
         pass
 
 
-    def prepare(self,evalSize=0.0, testSize=0.33):
+    def prepare(self,evalSize=0.0, testSize=0.33,limitSize=None):
         '''Convenience function to remove duplicates, split and standardise'''
         self.removeDuplicates()
-        self.split(evalSize=evalSize,testSize=testSize)
+        self.split(evalSize=evalSize,testSize=testSize,limitSize=limitSize)
         self.standardise() #This needs to be done after the split to not leak info into the test set
 
 
