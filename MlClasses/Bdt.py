@@ -1,15 +1,21 @@
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier
-from MlClasses.PerformanceTests import classificationReport,rocCurve,compareTrainTest
 import os
+
+from MlClasses.PerformanceTests import classificationReport,rocCurve,compareTrainTest
+from MlClasses.Config import Config
+
+from sklearn.model_selection import cross_val_score
 
 class Bdt(object):
     '''Take some data split into test and train sets and train a bdt on it'''
     def __init__(self,data,output=None):
         self.data = data
         self.output = output
+        self.config=Config(output=output)
 
         self.accuracy=None
+        self.crossValResults=None
 
     def setup(self,dtArgs={},bdtArgs={}):
 
@@ -28,9 +34,24 @@ class Bdt(object):
         self.dt = DecisionTreeClassifier(**dtArgs)
         self.bdt = AdaBoostClassifier(self.dt,**bdtArgs)
 
+        self.config.addToConfig('nDevEvents',len(self.data.y_dev.index))
+        self.config.addToConfig('nTrainEvents',len(self.data.y_train.index))
+        self.config.addToConfig('nTestEvents',len(self.data.y_test.index))
+        self.config.addToConfig('DT arguments',dtArgs)
+        self.config.addToConfig('BDT arguments',bdtArgs)
+
     def fit(self):
 
         self.bdt.fit(self.data.X_train, self.data.y_train)
+
+    def crossValidation(self,kfolds=3,n_jobs=4):
+        '''K-means cross validation'''
+        self.crossValResults = cross_val_score(self.bdt, self.data.X_dev, self.data.y_dev,scoring='accuracy',n_jobs=n_jobs,cv=kfolds)
+
+        self.config.addLine('CrossValidation')
+        self.config.addToConfig('kfolds',kfolds)
+        self.config.addLine('')
+
 
     def classificationReport(self):
         if not os.path.exists(self.output): os.makedirs(self.output)
@@ -41,6 +62,10 @@ class Bdt(object):
         f.write( '\n' )
         f.write('Performance on training set:')
         classificationReport(self.bdt.predict(self.data.X_train),self.bdt.decision_function(self.data.X_train),self.data.y_train,f)
+
+        if self.crossValResults is not None:
+            f.write( '\n\nCross Validation\n')
+            f.write("Cross val results: %.2f%% (%.2f%%)" % (self.crossValResults.mean()*100, self.crossValResults.std()*100))
         
     def rocCurve(self):
         rocCurve(self.bdt.decision_function(self.data.X_test),self.data.y_test,output=self.output)

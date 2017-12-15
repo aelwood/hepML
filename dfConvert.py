@@ -51,8 +51,14 @@ def addTLorentzVectors(df,tree,branches):
 #Function to convert a file path to a tree to a dataframe
 def convertTree(tree,signal=False,passFilePath=False,tlVectors=[]):
     if passFilePath:
-        rfile = r.TFile(tree) 
-        tree = rfile.Get('outtree')
+        if isinstance(tree,list):
+            chain = r.TChain('outtree')
+            for t in tree:
+                chain.Add(t)
+            tree=chain
+        else:
+            rfile = r.TFile(tree) 
+            tree = rfile.Get('outtree')
     #Note that this step can be replaced by root_pandas
     # this can also flatten the trees automatically
     df = pd.DataFrame(tree2array(tree))
@@ -62,15 +68,16 @@ def convertTree(tree,signal=False,passFilePath=False,tlVectors=[]):
 
 #Run on its own for testing
 if __name__=='__main__':
-    signal = '/nfs/dust/cms/group/susy-desy/marco/training_sample_new/top_sample_0.root'
-    backgroundFile = '/nfs/dust/cms/group/susy-desy/marco/training_sample_new/stop_sample_0.root'
+    signal = ['/nfs/dust/cms/group/susy-desy/marco/training_sample_new/top_sample_0.root',
+        '/nfs/dust/cms/group/susy-desy/marco/training_sample_new/top_sample_1.root']
+    backgroundFile = ['/nfs/dust/cms/group/susy-desy/marco/training_sample_new/stop_sample_0.root',
+        '/nfs/dust/cms/group/susy-desy/marco/training_sample_new/stop_sample_1.root',
+            ]
 
     signalArray = convertTree(signal,  signal=True,passFilePath=True)
     print signalArray
 
-    backgroundFile = r.TFile(backgroundFile)
-    background = backgroundFile.Get('outtree')
-    bkgdArray = convertTree(background,  signal=False,passFilePath=False,tlVectors = ['selJet','sel_lep'])
+    bkgdArray = convertTree(backgroundFile,  signal=False,passFilePath=True,tlVectors = ['selJet','sel_lep'])
     print bkgdArray
 
     print bkgdArray['selJet_pt']
@@ -79,15 +86,15 @@ if __name__=='__main__':
     #Produce some hists with pandas and root to check
     if not os.path.exists('testPlots'): os.makedirs('testPlots')
 
-    print 'Checking root and pandas make the same histograms'
-    c = r.TCanvas()
-    background.Draw('HT>>(100,0,3500)')
-    c.SaveAs('testPlots/rootHT.png')
-
-    bkgdArray.hist('HT',bins=range(0,3500+35,35))
-    plt.show()
-    plt.savefig('testPlots/pandasHT.png')
-
+    # print 'Checking root and pandas make the same histograms'
+    # c = r.TCanvas()
+    # background.Draw('HT>>(100,0,3500)')
+    # c.SaveAs('testPlots/rootHT.png')
+    #
+    # bkgdArray.hist('HT',bins=range(0,3500+35,35))
+    # plt.show()
+    # plt.savefig('testPlots/pandasHT.png')
+    #
     
     print 'Checking the sum of the jets from the tlorentz vector is equal to the HT'
     bkgdArray['myHT'] = bkgdArray.apply(lambda row: sum(row['selJet_pt']),axis=1)
