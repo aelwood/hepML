@@ -5,6 +5,8 @@ TODO:
 
 Possibilities:
 
+- With root numpy can read in files instead of trees, although this messes up
+  the lorentzvector reading part
 - move to root_pandas instead of root_numpy 
 - make the feature importances plotter use the ML data class
 - the mlData takes one set of variables, could allow it to choose subsets

@@ -1,22 +1,21 @@
 import matplotlib.pyplot as plt
 import os
 
-from keras.models import Sequential
-from keras.layers import Dense,Dropout
 from keras.utils import plot_model
+from keras.wrappers.scikit_learn import KerasClassifier
 
 from MlClasses.PerformanceTests import rocCurve,compareTrainTest,classificationReport
 from MlClasses.Config import Config
 
-def findLayerSize(layer,refSize):
+from MlFunctions.DnnFunctions import createDenseModel
 
-    if isinstance(layer, float):
-        return int(layer*refSize)
-    elif isinstance(layer, int):
-        return layer
-    else:
-        print 'WARNING: layer must be int or float'
-        return None
+#For cross validation and HP tuning
+from sklearn import preprocessing
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV
+
 
 class Dnn(object):
 
@@ -26,6 +25,9 @@ class Dnn(object):
         self.config=Config(output=output)
 
         self.accuracy=None
+        self.crossValResults=None
+
+        self.defaultParams = {}
 
     def setup(self,hiddenLayers=[1.0],dropOut=None):
 
@@ -42,50 +44,30 @@ class Dnn(object):
 
         #Find number of unique outputs
         outputSize = len(self.data.y_train.unique())
-        refSize=inputSize+outputSize
 
-        self.model = Sequential()
-
-        assert len(hiddenLayers)>=1, 'Need at least one hidden layer'
-
-        #Add the first layer, taking the inputs
-        self.model.add(Dense(units=findLayerSize(hiddenLayers[0],refSize), 
-            activation='relu', input_dim=inputSize,name='input'))
-
-        if dropOut: self.model.add(Dropout(dropOut))
-
-        #Add the extra hidden layers
-        for layer in hiddenLayers[1:]:
-            self.model.add(Dense(units=findLayerSize(hiddenLayers[0],refSize), 
-                activation='relu'))
-
-            if dropOut: self.model.add(Dropout(dropOut))
-
-        #Add the output layer and choose the type of loss function
-        #Choose the loss function based on whether it's binary or not
-        if outputSize==2: 
-            #It's better to choose a sigmoid function and one output layer for binary
-            # This is a special case of n>2 classification
-            self.model.add(Dense(1, activation='sigmoid'))
-            loss = 'binary_crossentropy'
-        else: 
-            #Softmax forces the outputs to sum to 1 so the score on each node
-            # can be interpreted as the probability of getting each class
-            self.model.add(Dense(outputSize, activation='softmax'))
-            loss = 'categorical_crossentropy'
-
-        #After the layers are added compile the model
-        self.model.compile(loss=loss,
-            optimizer='adam',metrics=['accuracy'])
+        self.model=createDenseModel(
+            inputSize=inputSize,outputSize=outputSize,
+            hiddenLayers=hiddenLayers,dropOut=dropOut,
+            activation='relu',optimizer='adam'
+            )
+        self.defaultParams = dict(
+            inputSize=inputSize,outputSize=outputSize,
+            hiddenLayers=hiddenLayers,dropOut=dropOut,
+            activation='relu',optimizer='adam'
+            )
 
         #Add stuff to the config
         self.config.addToConfig('inputSize',inputSize)
         self.config.addToConfig('outputSize',outputSize)
+        self.config.addToConfig('nEvalEvents',len(self.data.y_eval.index))
+        self.config.addToConfig('nDevEvents',len(self.data.y_dev.index))
+        self.config.addToConfig('nTrainEvents',len(self.data.y_train.index))
+        self.config.addToConfig('nTestEvents',len(self.data.y_test.index))
         self.config.addToConfig('hiddenLayers',hiddenLayers)
         self.config.addToConfig('dropOut',dropOut)
-        self.config.addToConfig('loss',loss)
 
     def fit(self,epochs=20,batch_size=32,**kwargs):
+        '''Fit with training set and validate with test set'''
 
         #Fit the model and save the history for diagnostics
         #additionally pass the testing data for further diagnostic results
@@ -94,9 +76,74 @@ class Dnn(object):
                 epochs=epochs, batch_size=batch_size,**kwargs)
 
         #Add stuff to the config
+        self.config.addLine('Test train split')
         self.config.addToConfig('epochs',epochs)
         self.config.addToConfig('batch_size',batch_size)
         self.config.addToConfig('extra',kwargs)
+        self.config.addLine('')
+
+    def crossValidation(self,kfolds=3,epochs=20,batch_size=32,n_jobs=4):
+        '''K-means cross validation with data standardisation'''
+        #Reference: https://machinelearningmastery.com/binary-classification-tutorial-with-the-keras-deep-learning-library/
+
+        #Have to be careful with this and redo the standardisation
+        #Do this on the development set, save the eval set for after HP tuning
+
+        #Check the development set isn't standardised
+        if self.data.standardisedDev:
+            self.data.unStandardise(justDev=True)
+
+        #Use a pipeline in sklearn to carry out standardisation just on the training set
+        estimators = []
+        estimators.append(('standardize', preprocessing.StandardScaler()))
+        estimators.append(('mlp', KerasClassifier(build_fn=createDenseModel, 
+            epochs=epochs, batch_size=batch_size,verbose=0, **self.defaultParams))) #verbose=0
+        pipeline = Pipeline(estimators)
+
+        #Define the kfold parameters and run the cross validation
+        kfold = StratifiedKFold(n_splits=kfolds, shuffle=True, random_state=43)
+        self.crossValResults = cross_val_score(pipeline, self.data.X_dev.as_matrix(), self.data.y_dev.as_matrix(), cv=kfold,n_jobs=n_jobs)
+        print "Cross val results: %.2f%% (%.2f%%)" % (self.crossValResults.mean()*100, self.crossValResults.std()*100)
+
+        #Save the config
+        self.config.addLine('CrossValidation')
+        self.config.addToConfig('kfolds',kfolds)
+        self.config.addToConfig('epochs',epochs)
+        self.config.addToConfig('batch_size',batch_size)
+        self.config.addLine('')
+
+    def gridSearch(self,param_grid,kfolds=3,epochs=20,batch_size=32,n_jobs=4):
+        '''Implementation of the sklearn grid search for hyper parameter tuning, 
+        making use of kfolds cross validation.
+        Pass a dictionary of lists of parameters to test on. Choose number of cores
+        to run on with n_jobs, -1 is all of them'''
+        #Reference: https://machinelearningmastery.com/grid-search-hyperparameters-deep-learning-models-python-keras/
+
+        #Check the development set isn't standardised
+        if self.data.standardisedDev:
+            self.data.unStandardise(justDev=True)
+        
+        #Use a pipeline in sklearn to carry out standardisation just on the training set
+        estimators = []
+        estimators.append(('standardize', preprocessing.StandardScaler()))
+        estimators.append(('mlp', KerasClassifier(build_fn=createDenseModel, 
+            epochs=epochs, batch_size=batch_size,verbose=0, **self.defaultParams)))
+        pipeline = Pipeline(estimators)
+
+        #Setup and fit the grid search, choosing cross validation params and N cores
+        grid = GridSearchCV(estimator=pipeline,param_grid=param_grid,cv=kfolds,n_jobs=n_jobs)
+        self.gridResult = grid.fit(self.data.X_dev.as_matrix(),self.data.y_dev.as_matrix())
+
+        #Save the results
+        if not os.path.exists(self.output): os.makedirs(self.output)
+        outFile = open(os.path.join(self.output,'gridSearchResults.txt'),'w')
+        outFile.write("Best: %f using %s \n\n" % (self.gridResult.best_score_, self.gridResult.best_params_))
+        means = self.gridResult.cv_results_['mean_test_score']
+        stds = self.gridResult.cv_results_['std_test_score']
+        params = self.gridResult.cv_results_['params']
+        for mean, stdev, param in zip(means, stds, params):
+            outFile.write("%f (%f) with: %r\n" % (mean, stdev, param))
+        outFile.close()
 
     def saveConfig(self):
 
@@ -112,14 +159,18 @@ class Dnn(object):
         report = self.model.evaluate(self.data.X_test.as_matrix(), self.data.y_test.as_matrix(), batch_size=32)
         self.accuracy=report[1]
         classificationReport(self.model.predict_classes(self.data.X_test.as_matrix()),self.model.predict(self.data.X_test.as_matrix()),self.data.y_test,f)
-        f.write( '\nDNN Loss, Accuracy:\n')
+        f.write( '\n\nDNN Loss, Accuracy:\n')
         f.write(str(report)) 
 
         f.write( '\n\nPerformance on train set:\n')
         report = self.model.evaluate(self.data.X_train.as_matrix(), self.data.y_train.as_matrix(), batch_size=32)
         classificationReport(self.model.predict_classes(self.data.X_train.as_matrix()),self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,f)
-        f.write( '\nDNN Loss, Accuracy:\n')
+        f.write( '\n\nDNN Loss, Accuracy:\n')
         f.write(str(report))
+
+        if self.crossValResults is not None:
+            f.write( '\n\nCross Validation\n')
+            f.write("Cross val results: %.2f%% (%.2f%%)" % (self.crossValResults.mean()*100, self.crossValResults.std()*100))
 
     def rocCurve(self):
 
