@@ -31,8 +31,8 @@ prepareInputs=False
 
 #ML options
 plotFeatureImportances=False
-doBDT=True
-doDNN=False
+doBDT=False
+doDNN=True
 doCrossVal=False
 doGridSearch=True #if this is true do a grid search, if not use the configs
 
