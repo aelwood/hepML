@@ -5,7 +5,9 @@ import os
 from MlClasses.PerformanceTests import classificationReport,rocCurve,compareTrainTest
 from MlClasses.Config import Config
 
+#For cross validation and HP tuning
 from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV
 
 class Bdt(object):
     '''Take some data split into test and train sets and train a bdt on it'''
@@ -52,6 +54,25 @@ class Bdt(object):
         self.config.addToConfig('kfolds',kfolds)
         self.config.addLine('')
 
+    def gridSearch(self,param_grid,kfolds=3,n_jobs=4):
+        '''Implementation of the sklearn grid search for hyper parameter tuning, 
+        making use of kfolds cross validation.
+        Pass a dictionary of lists of parameters to test on. Choose number of cores
+        to run on with n_jobs, -1 is all of them'''
+
+        grid = GridSearchCV(self.bdt,scoring='accuracy',n_jobs=n_jobs,cv=kfolds)
+        self.gridResult = grid.fit(self.data.X_dev, self.data.y_dev)
+
+        #Save the results
+        if not os.path.exists(self.output): os.makedirs(self.output)
+        outFile = open(os.path.join(self.output,'gridSearchResults.txt'),'w')
+        outFile.write("Best: %f using %s \n\n" % (self.gridResult.best_score_, self.gridResult.best_params_))
+        means = self.gridResult.cv_results_['mean_test_score']
+        stds = self.gridResult.cv_results_['std_test_score']
+        params = self.gridResult.cv_results_['params']
+        for mean, stdev, param in zip(means, stds, params):
+            outFile.write("%f (%f) with: %r\n" % (mean, stdev, param))
+        outFile.close()
 
     def classificationReport(self):
         if not os.path.exists(self.output): os.makedirs(self.output)
@@ -76,6 +97,8 @@ class Bdt(object):
                 self.data.X_test,self.data.y_test,self.output)
 
     def diagnostics(self):
+
+        self.saveConfig()
         self.classificationReport()
         self.rocCurve()
         self.compareTrainTest()
