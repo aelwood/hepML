@@ -20,6 +20,8 @@ from root_numpy import rec2array
 
 
 nInputFiles=5
+limitSize=None#Make this an integer N_events if you want to limit input
+
 makeDfs=False
 saveDfs=True #Save the dataframes if they're remade
 
@@ -31,8 +33,8 @@ prepareInputs=False
 plotFeatureImportances=False
 doBDT=True
 doDNN=False
-doCrossVal=True
-doGridSearch=False #if this is true do a grid search, if not use the configs
+doCrossVal=False
+doGridSearch=True #if this is true do a grid search, if not use the configs
 
 #If not doing the grid search
 dnnConfigs={
@@ -68,6 +70,12 @@ dnnGridParams = dict(
         ## NOT IMPLEMENTED YET:
         # mlp__learningRate=[0.5,1.0], 
         # mlp__weightConstraint=[1.0,3.0,5.0]
+        )
+
+bdtGridParams = dict(
+        base_estimator__max_depth=[3,5],
+        base_estimator__min_samples_leaf=[0.05,0.2],
+        n_estimators=[400,800]
         )
 
 if __name__=='__main__':
@@ -261,12 +269,12 @@ if __name__=='__main__':
         #Split the development set into training and testing
         #(forgetting about evaluation for now)
 
-        mlData.prepare(evalSize=0.2,testSize=0.33,limitSize=1000)
+        mlData.prepare(evalSize=0.2,testSize=0.33,limitSize=limitSize)
 
         if doBDT:
 
             if doGridSearch:
-                pass
+                print 'Running BDT grid search'
                 bdt = Bdt(mlData,'testPlots/mlPlots/'+varSetName+'/bdtGridSearch')
                 bdt.setup()
                 bdt.gridSearch(param_grid=bdtGridParams,kfolds=3,n_jobs=4)
@@ -289,6 +297,7 @@ if __name__=='__main__':
         if doDNN:
 
             if doGridSearch:
+                print 'Running DNN grid search'
                 dnn = Dnn(mlData,'testPlots/mlPlots/'+varSetName+'/dnnGridSearch')
                 dnn.setup()
                 dnn.gridSearch(param_grid=dnnGridParams,kfolds=3,epochs=20,batch_size=32,n_jobs=4)

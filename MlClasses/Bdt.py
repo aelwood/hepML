@@ -36,6 +36,7 @@ class Bdt(object):
         self.dt = DecisionTreeClassifier(**dtArgs)
         self.bdt = AdaBoostClassifier(self.dt,**bdtArgs)
 
+        self.config.addToConfig('nEvalEvents',len(self.data.y_eval.index))
         self.config.addToConfig('nDevEvents',len(self.data.y_dev.index))
         self.config.addToConfig('nTrainEvents',len(self.data.y_train.index))
         self.config.addToConfig('nTestEvents',len(self.data.y_test.index))
@@ -60,7 +61,7 @@ class Bdt(object):
         Pass a dictionary of lists of parameters to test on. Choose number of cores
         to run on with n_jobs, -1 is all of them'''
 
-        grid = GridSearchCV(self.bdt,scoring='accuracy',n_jobs=n_jobs,cv=kfolds)
+        grid = GridSearchCV(estimator=self.bdt,param_grid=param_grid,scoring='accuracy',n_jobs=n_jobs,cv=kfolds)
         self.gridResult = grid.fit(self.data.X_dev, self.data.y_dev)
 
         #Save the results

@@ -59,6 +59,7 @@ class Dnn(object):
         #Add stuff to the config
         self.config.addToConfig('inputSize',inputSize)
         self.config.addToConfig('outputSize',outputSize)
+        self.config.addToConfig('nEvalEvents',len(self.data.y_eval.index))
         self.config.addToConfig('nDevEvents',len(self.data.y_dev.index))
         self.config.addToConfig('nTrainEvents',len(self.data.y_train.index))
         self.config.addToConfig('nTestEvents',len(self.data.y_test.index))
