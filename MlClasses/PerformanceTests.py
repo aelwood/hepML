@@ -49,7 +49,7 @@ def rocCurve(y_preds,y_test=None,output=None,append=''):
     plt.savefig(os.path.join(output,'rocCurve'+append+'.pdf'))
     plt.clf()
 
-def compareTrainTest(clf, X_train, y_train, X_test, y_test, output, bins=30):
+def compareTrainTest(clf, X_train, y_train, X_test, y_test, output, bins=30,append=''):
     '''Compares the decision function for the train and test BDT'''
     decisions = []
     for X,y in ((X_train, y_train), (X_test, y_test)):
@@ -90,7 +90,7 @@ def compareTrainTest(clf, X_train, y_train, X_test, y_test, output, bins=30):
     plt.ylabel("Arbitrary units")
     plt.legend(loc='best')
     if not os.path.exists(output): os.makedirs(output)
-    plt.savefig(os.path.join(output,'compareTrainTest.pdf'))
+    plt.savefig(os.path.join(output,'compareTrainTest'+append+'.pdf'))
     plt.clf()
 
 def plotDiscriminator(clf,X_test,y_test,bins=30):
