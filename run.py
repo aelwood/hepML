@@ -61,8 +61,8 @@ def hiddenLayerGrid(nLayers,nNodes):
     return hlg
 
 dnnGridParams = dict(
-        # mlp__epochs=[10,20,50],
-        # mlp__batch_size=[32,64,128], 
+        mlp__epochs=[10,20,50],
+        mlp__batch_size=[32,64], 
         mlp__hiddenLayers=hiddenLayerGrid([1,2,3,4,5],[2.0,1.0,0.5]),
         mlp__dropOut=[None,0.25,0.5],
         # mlp__activation=['relu','sigmoid','tanh'],
