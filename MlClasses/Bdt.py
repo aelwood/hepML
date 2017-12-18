@@ -80,34 +80,57 @@ class Bdt(object):
         if not os.path.exists(self.output): os.makedirs(self.output)
         self.config.saveConfig()
 
-    def classificationReport(self):
+    def classificationReport(self,doEvalSet=False):
+
+        if doEvalSet: #produce report for dev and eval sets instead
+            X_test=self.data.X_eval
+            y_test=self.data.y_eval
+            X_train=self.data.X_dev
+            y_train=self.data.y_dev
+            append='_eval'
+        else:
+            X_test=self.data.X_test
+            y_test=self.data.y_test
+            X_train=self.data.X_train
+            y_train=self.data.y_train
+            append=''
+
         if not os.path.exists(self.output): os.makedirs(self.output)
-        f=open(os.path.join(self.output,'classificationReport.txt'),'w')
+        f=open(os.path.join(self.output,'classificationReport'+append+'.txt'),'w')
         f.write( 'Performance on test set:')
-        classificationReport(self.bdt.predict(self.data.X_test),self.bdt.decision_function(self.data.X_test),self.data.y_test,f)
+        classificationReport(self.bdt.predict(X_test),self.bdt.decision_function(X_test),y_test,f)
 
         f.write( '\n' )
         f.write('Performance on training set:')
-        classificationReport(self.bdt.predict(self.data.X_train),self.bdt.decision_function(self.data.X_train),self.data.y_train,f)
+        classificationReport(self.bdt.predict(X_train),self.bdt.decision_function(X_train),y_train,f)
 
         if self.crossValResults is not None:
             f.write( '\n\nCross Validation\n')
             f.write("Cross val results: %.2f%% (%.2f%%)" % (self.crossValResults.mean()*100, self.crossValResults.std()*100))
         
-    def rocCurve(self):
-        rocCurve(self.bdt.decision_function(self.data.X_test),self.data.y_test,output=self.output)
-        rocCurve(self.bdt.decision_function(self.data.X_train),self.data.y_train,output=self.output,append='_train')
+    def rocCurve(self,doEvalSet=False):
 
-    def compareTrainTest(self):
-        compareTrainTest(self.bdt.decision_function,self.data.X_train,self.data.y_train,\
-                self.data.X_test,self.data.y_test,self.output)
+        if doEvalSet: #produce report for dev and eval sets instead
+            rocCurve(self.bdt.decision_function(self.data.X_eval),self.data.y_eval,output=self.output,append='_eval')
+            rocCurve(self.bdt.decision_function(self.data.X_dev),self.data.y_dev,output=self.output,append='_dev')
+        else:
+            rocCurve(self.bdt.decision_function(self.data.X_test),self.data.y_test,output=self.output)
+            rocCurve(self.bdt.decision_function(self.data.X_train),self.data.y_train,output=self.output,append='_train')
 
-    def diagnostics(self):
+    def compareTrainTest(self,doEvalSet=False):
+        if doEvalSet:
+            compareTrainTest(self.bdt.decision_function,self.data.X_dev,self.data.y_dev,\
+                    self.data.X_eval,self.data.y_eval,self.output,append='_eval')
+        else:
+            compareTrainTest(self.bdt.decision_function,self.data.X_train,self.data.y_train,\
+                    self.data.X_test,self.data.y_test,self.output)
+
+    def diagnostics(self,doEvalSet=False):
 
         self.saveConfig()
-        self.classificationReport()
-        self.rocCurve()
-        self.compareTrainTest()
+        self.classificationReport(doEvalSet=doEvalSet)
+        self.rocCurve(doEvalSet=doEvalSet)
+        self.compareTrainTest(doEvalSet=doEvalSet)
 
     def plotDiscriminator(self):
         plotDiscriminator(self.bdt,self.data.X_test,self.data.y_test, self.output)

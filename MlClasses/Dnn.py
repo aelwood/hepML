@@ -151,20 +151,33 @@ class Dnn(object):
         plot_model(self.model, to_file=os.path.join(self.output,'model.ps'))
         self.config.saveConfig()
 
-    def classificationReport(self):
+    def classificationReport(self,doEvalSet=False):
+
+        if doEvalSet: #produce report for dev and eval sets instead
+            X_test=self.data.X_eval
+            y_test=self.data.y_eval
+            X_train=self.data.X_dev
+            y_train=self.data.y_dev
+            append='_eval'
+        else:
+            X_test=self.data.X_test
+            y_test=self.data.y_test
+            X_train=self.data.X_train
+            y_train=self.data.y_train
+            append=''
 
         if not os.path.exists(self.output): os.makedirs(self.output)
-        f=open(os.path.join(self.output,'classificationReport.txt'),'w')
+        f=open(os.path.join(self.output,'classificationReport'+append+'.txt'),'w')
         f.write( 'Performance on test set:\n')
-        report = self.model.evaluate(self.data.X_test.as_matrix(), self.data.y_test.as_matrix(), batch_size=32)
+        report = self.model.evaluate(X_test.as_matrix(), y_test.as_matrix(), batch_size=32)
         self.accuracy=report[1]
-        classificationReport(self.model.predict_classes(self.data.X_test.as_matrix()),self.model.predict(self.data.X_test.as_matrix()),self.data.y_test,f)
+        classificationReport(self.model.predict_classes(X_test.as_matrix()),self.model.predict(X_test.as_matrix()),y_test,f)
         f.write( '\n\nDNN Loss, Accuracy:\n')
         f.write(str(report)) 
 
         f.write( '\n\nPerformance on train set:\n')
-        report = self.model.evaluate(self.data.X_train.as_matrix(), self.data.y_train.as_matrix(), batch_size=32)
-        classificationReport(self.model.predict_classes(self.data.X_train.as_matrix()),self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,f)
+        report = self.model.evaluate(X_train.as_matrix(), y_train.as_matrix(), batch_size=32)
+        classificationReport(self.model.predict_classes(X_train.as_matrix()),self.model.predict(X_train.as_matrix()),y_train,f)
         f.write( '\n\nDNN Loss, Accuracy:\n')
         f.write(str(report))
 
@@ -172,13 +185,22 @@ class Dnn(object):
             f.write( '\n\nCross Validation\n')
             f.write("Cross val results: %.2f%% (%.2f%%)" % (self.crossValResults.mean()*100, self.crossValResults.std()*100))
 
-    def rocCurve(self):
+    def rocCurve(self,doEvalSet=False):
 
-        rocCurve(self.model.predict(self.data.X_test.as_matrix()), self.data.y_test,self.output)
-        rocCurve(self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,self.output,append='_train')
+        if doEvalSet:
+            rocCurve(self.model.predict(self.data.X_eval.as_matrix()), self.data.y_eval,self.output,append='_eval')
+            rocCurve(self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,self.output,append='_dev')
+        else:
+            rocCurve(self.model.predict(self.data.X_test.as_matrix()), self.data.y_test,self.output)
+            rocCurve(self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,self.output,append='_train')
 
-    def compareTrainTest(self):
-        compareTrainTest(self.model.predict,self.data.X_train.as_matrix(),self.data.y_train.as_matrix(),\
+    def compareTrainTest(self,doEvalSet=False):
+
+        if doEvalSet: 
+            compareTrainTest(self.model.predict,self.data.X_dev.as_matrix(),self.data.y_dev.as_matrix(),\
+                self.data.X_eval.as_matrix(),self.data.y_eval.as_matrix(),self.output,append='_eval')
+        else:
+            compareTrainTest(self.model.predict,self.data.X_train.as_matrix(),self.data.y_train.as_matrix(),\
                 self.data.X_test.as_matrix(),self.data.y_test.as_matrix(),self.output)
 
     def plotHistory(self):
@@ -205,12 +227,12 @@ class Dnn(object):
         plt.savefig(os.path.join(self.output,'lossEvolution.pdf'))
         plt.clf()
 
-    def diagnostics(self):
+    def diagnostics(self,doEvalSet=False):
 
         self.saveConfig()
-        self.classificationReport()
-        self.rocCurve()
-        self.compareTrainTest()
+        self.classificationReport(doEvalSet=doEvalSet)
+        self.rocCurve(doEvalSet=doEvalSet)
+        self.compareTrainTest(doEvalSet=doEvalSet)
         self.plotHistory()
 
     def testPrediction(self):
