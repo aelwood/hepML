@@ -20,7 +20,7 @@ from root_numpy import rec2array
 
 
 nInputFiles=5
-limitSize=None#Make this an integer N_events if you want to limit input
+limitSize=20000#None #Make this an integer N_events if you want to limit input
 
 makeDfs=False
 saveDfs=True #Save the dataframes if they're remade
@@ -34,21 +34,28 @@ plotFeatureImportances=False
 doBDT=False
 doDNN=True
 doCrossVal=False
-doGridSearch=True #if this is true do a grid search, if not use the configs
+makeLearningCurve=True
+doGridSearch=False #if this is true do a grid search, if not use the configs
 
 #If not doing the grid search
 dnnConfigs={
-    'dnn':{'epochs':10,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0]},
+    'dnn':{'epochs':2,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0]},
     # 'dnn2l':{'epochs':10,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0]},
     # 'dnn3l':{'epochs':10,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0,1.0]},
     # 'dnndo0p5':{'epochs':10,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0]},
     # 'dnn2ldo0p5':{'epochs':10,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0,0.5]},
     # 'dnndo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0]},
-    'dnn2ldo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0]},
-    'dnn3ldo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0,1.0]},
+    # 'dnn2ldo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0]},
+    # 'dnn3ldo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0,1.0]},
     # 'dnnSmall':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[0.3]},
     # 'dnn2lSmall':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.3]},
     # 'dnn3lSmall':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.5,0.3]},
+
+    #Bests
+    #4 vector
+    'dnnBest4Vec':{'epochs':5,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0,2.0]},
+    'dnnBestGram':{'epochs':5,'batch_size':32,'dropOut':0.25,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
+    'dnn4lGood':{'epochs':5,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0,2.0,2.0]},
         }
 
 #If doing the grid search
@@ -203,9 +210,9 @@ if __name__=='__main__':
             # 'gramHT':['signal','gram','HT'],
             #
             # #The 4 vectors only
-            'fourVector':['signal',
-            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
+            # 'fourVector':['signal',
+            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
             #
             # 'fourVectorBL':['signal','lep_type','selJetB',
             # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
@@ -286,7 +293,11 @@ if __name__=='__main__':
                 bdt.setup()
                 bdt.fit()
                 if doCrossVal:
+                    print ' > Carrying out cross validation'
                     bdt.crossValidation(kfolds=5)
+                if makeLearningCurve:
+                    print ' > Making learning curves'
+                    bdt.learningCurve(kfolds=5,n_jobs=3)
 
                 #and carry out a diagnostic of the results
                 print ' > Producing diagnostics'
@@ -308,12 +319,19 @@ if __name__=='__main__':
                     print 'Defining and fitting DNN',name
                     dnn = Dnn(mlData,'testPlots/mlPlots/'+varSetName+'/'+name)
                     dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'])
+
+
                     dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
                     if doCrossVal:
+                        print ' > Carrying out cross validation'
                         dnn.crossValidation(kfolds=5,epochs=config['epochs'],batch_size=config['batch_size'])
+                    if makeLearningCurve:
+                        print ' > Making learning curves'
+                        dnn.learningCurve(kfolds=5,n_jobs=1)
 
                     print ' > Producing diagnostics'
                     dnn.diagnostics()
+
 
                     trainedModels[varSetName+'_'+name]=dnn
 

@@ -1,4 +1,6 @@
 from sklearn.metrics import classification_report, roc_auc_score, roc_curve, auc
+from sklearn.model_selection import learning_curve
+from sklearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
 import os
 import numpy as np
@@ -101,3 +103,121 @@ def plotDiscriminator(clf,X_test,y_test,bins=30):
     plt.savefig(os.path.join(output,'discriminator.pdf'))
     plt.clf()
 
+
+def learningCurve(model, X_train, y_train, output,
+                       ylim=None, cv=None, n_jobs=1,
+                       train_sizes=np.linspace(0.1, 1.0, 10, endpoint=True)):
+    # taken from https://gitlab.com/Contreras/hepML/blob/master/visualization/plotter.py
+
+    """
+    Generate a simple plot of the test and training learning curve.
+
+    Parameters
+    ----------
+    model : object type that implements the "fit" and "predict" methods
+        An object of that type which is cloned for each validation.
+
+    X_train : array-like, shape (n_samples, n_features)
+        Training vector, where n_samples is the number of samples and
+        n_features is the number of features.
+
+    y_train : array-like, shape (n_samples) or (n_samples, n_features), optional
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+
+    ylim : tuple, shape (ymin, ymax), optional
+    Defines minimum and maximum yvalues plotted.
+
+    cv : int, cross-validation generator or an iterable, optional
+    Determines the cross-validation splitting strategy.
+    Possible inputs for cv are:
+      - None, to use the default 3-fold cross-validation,
+      - integer, to specify the number of folds.
+      - An object to be used as a cross-validation generator.
+      - An iterable yielding train/test splits.
+
+      For integer/None inputs, if ``y`` is binary or multiclass,
+      :class:`StratifiedKFold` used. If the estimator is not a classifier
+      or if ``y`` is neither binary nor multiclass, :class:`KFold` is used.
+
+      Refer :ref:`User Guide <cross_validation>` for the various
+      cross-validators that can be used here.
+
+      n_jobs : integer, optional
+         Number of jobs to run in parallel (default 1).
+
+      train_sizes = np.linspace(0.1, 1.0, 10, endpoint=True) produces
+         8 evenly spaced points in the range 0 to 10
+      """
+
+    # check to see if model is a pipeline object or not
+    if isinstance(model, Pipeline):
+        data_type = type(model._final_estimator)
+    else:
+        data_type = type(model)
+
+    # plot title
+    name = filter(str.isalnum, str(data_type).split(".")[-1])
+    title = "Learning Curves (%s)" % name
+
+    # create blank canvas
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.grid(which='major', linestyle='-', linewidth='0.2', color='gray')
+    ax.set_facecolor('white')
+
+    train_sizes_abs, train_scores, test_scores = learning_curve(model,
+                                                                X_train, y_train,
+                                                                train_sizes=np.linspace(0.1, 1.0, 10),
+                                                                cv=cv,
+                                                                scoring=None,
+                                                                exploit_incremental_learning=False,
+                                                                n_jobs=n_jobs,
+                                                                pre_dispatch="all",
+                                                                verbose=0)
+
+    train_scores_mean = np.mean(train_scores, axis=1)
+    train_scores_std  = np.std(train_scores, axis=1)
+
+    test_scores_mean = np.mean(test_scores, axis=1)
+    test_scores_std  = np.std(test_scores, axis=1)
+
+    # plot the std deviation as a transparent range at each training set size
+    plt.fill_between(train_sizes_abs, train_scores_mean - train_scores_std,
+                     train_scores_mean + train_scores_std, alpha=0.1, color="r")
+
+    plt.fill_between(train_sizes_abs, test_scores_mean - test_scores_std,
+                     test_scores_mean + test_scores_std, alpha=0.1, color="g")
+
+    # plot the average training and test score lines at each training set size
+    plt.plot(train_sizes_abs, train_scores_mean, 'o-', color="r",
+             label="Training score")
+
+    plt.plot(train_sizes_abs, test_scores_mean, 'o-', color="g",
+             label="Cross-validation score")
+
+    plt.title(title, fontsize=14)
+
+    # sizes the window for readability and displays the plot
+    # shows error from 0 to 1.1
+    if ylim is not None:
+        plt.ylim(*ylim)
+        #plt.ylim(-.1, 1.1)
+
+    plt.xlabel("Training set size")
+    plt.ylabel("Score")
+
+    leg = plt.legend(loc="best", frameon=True, fancybox=False, fontsize=12)
+    leg.get_frame().set_edgecolor('w')
+
+    frame = leg.get_frame()
+    frame.set_facecolor('White')
+
+    # box-like grid
+    #plt.grid(figsize=(8, 6))
+
+    #plt.gca().invert_yaxis()
+    if not os.path.exists(output): os.makedirs(output)
+    plt.savefig(os.path.join(output,'learningCurve.pdf'))
+    plt.clf()
+
+    

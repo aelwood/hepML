@@ -2,7 +2,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier
 import os
 
-from MlClasses.PerformanceTests import classificationReport,rocCurve,compareTrainTest
+from MlClasses.PerformanceTests import classificationReport,rocCurve,compareTrainTest,learningCurve
 from MlClasses.Config import Config
 
 #For cross validation and HP tuning
@@ -124,6 +124,9 @@ class Bdt(object):
         else:
             compareTrainTest(self.bdt.decision_function,self.data.X_train,self.data.y_train,\
                     self.data.X_test,self.data.y_test,self.output)
+
+    def learningCurve(self,kfolds=3,n_jobs=1):
+        learningCurve(self.bdt,self.data.X_dev,self.data.y_dev,self.output,cv=kfolds,n_jobs=n_jobs)
 
     def diagnostics(self,doEvalSet=False):
 

@@ -4,7 +4,7 @@ import os
 from keras.utils import plot_model
 from keras.wrappers.scikit_learn import KerasClassifier
 
-from MlClasses.PerformanceTests import rocCurve,compareTrainTest,classificationReport
+from MlClasses.PerformanceTests import rocCurve,compareTrainTest,classificationReport,learningCurve
 from MlClasses.Config import Config
 
 from MlFunctions.DnnFunctions import createDenseModel
@@ -227,6 +227,11 @@ class Dnn(object):
         plt.savefig(os.path.join(self.output,'lossEvolution.pdf'))
         plt.clf()
 
+    def learningCurve(self,epochs=20,batch_size=32,kfolds=3,n_jobs=1):
+        model=KerasClassifier(build_fn=createDenseModel, 
+            epochs=epochs, batch_size=batch_size,verbose=0, **self.defaultParams)   
+        learningCurve(model,self.data.X_dev.as_matrix(),self.data.y_dev.as_matrix(),self.output,cv=kfolds,n_jobs=n_jobs)
+
     def diagnostics(self,doEvalSet=False):
 
         self.saveConfig()
@@ -244,4 +249,4 @@ class Dnn(object):
             self.accuracy = self.model.evaluate(self.data.X_test.as_matrix(), self.data.y_test.as_matrix(), batch_size=32)[1]
 
         return self.accuracy
-        
+

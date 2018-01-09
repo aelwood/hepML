@@ -38,7 +38,7 @@ def createDenseModel(inputSize=None,outputSize=None,hiddenLayers=[1.0],dropOut=N
     #Choose the loss function based on whether it's binary or not
     if outputSize==2: 
         #It's better to choose a sigmoid function and one output layer for binary
-        # This is a special case of n>2 classification
+        # This is a special case of n=2 classification
         model.add(Dense(1, activation='sigmoid'))
         loss = 'binary_crossentropy'
     else: 
