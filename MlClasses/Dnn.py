@@ -19,15 +19,22 @@ from sklearn.model_selection import GridSearchCV
 
 class Dnn(object):
 
-    def __init__(self,data,output=None):
+    def __init__(self,data,output=None,doRegression=False):
         self.data = data
         self.output = output
         self.config=Config(output=output)
 
-        self.accuracy=None
+        self.score=None
         self.crossValResults=None
 
         self.defaultParams = {}
+
+        self.doRegression = doRegression
+
+        if self.doRegression:
+            self.scoreType = 'mean_squared_error'
+        else:
+            self.scoreType = 'accuracy'
 
     def setup(self,hiddenLayers=[1.0],dropOut=None):
 
@@ -48,15 +55,18 @@ class Dnn(object):
         self.model=createDenseModel(
             inputSize=inputSize,outputSize=outputSize,
             hiddenLayers=hiddenLayers,dropOut=dropOut,
-            activation='relu',optimizer='adam'
+            activation='relu',optimizer='adam',
+            doRegression=doRegression
             )
         self.defaultParams = dict(
             inputSize=inputSize,outputSize=outputSize,
             hiddenLayers=hiddenLayers,dropOut=dropOut,
-            activation='relu',optimizer='adam'
+            activation='relu',optimizer='adam',
+            doRegression=doRegression
             )
 
         #Add stuff to the config
+        self.config.addToConfig('doRegression',doRegression)
         self.config.addToConfig('inputSize',inputSize)
         self.config.addToConfig('outputSize',outputSize)
         self.config.addToConfig('nEvalEvents',len(self.data.y_eval.index))
@@ -168,17 +178,25 @@ class Dnn(object):
 
         if not os.path.exists(self.output): os.makedirs(self.output)
         f=open(os.path.join(self.output,'classificationReport'+append+'.txt'),'w')
+
         f.write( 'Performance on test set:\n')
         report = self.model.evaluate(X_test.as_matrix(), y_test.as_matrix(), batch_size=32)
-        self.accuracy=report[1]
-        classificationReport(self.model.predict_classes(X_test.as_matrix()),self.model.predict(X_test.as_matrix()),y_test,f)
-        f.write( '\n\nDNN Loss, Accuracy:\n')
+        self.score=report[1]
+
+        if self.doRegression:
+            f.write( '\n\nDNN Loss, Mean Squared Error:\n')
+        else:
+            classificationReport(self.model.predict_classes(X_test.as_matrix()),self.model.predict(X_test.as_matrix()),y_test,f)
+            f.write( '\n\nDNN Loss, Accuracy:\n')
         f.write(str(report)) 
 
         f.write( '\n\nPerformance on train set:\n')
         report = self.model.evaluate(X_train.as_matrix(), y_train.as_matrix(), batch_size=32)
-        classificationReport(self.model.predict_classes(X_train.as_matrix()),self.model.predict(X_train.as_matrix()),y_train,f)
-        f.write( '\n\nDNN Loss, Accuracy:\n')
+        if self.doRegression:
+            f.write( '\n\nDNN Loss, Mean Squared Error:\n')
+        else:
+            classificationReport(self.model.predict_classes(X_train.as_matrix()),self.model.predict(X_train.as_matrix()),y_train,f)
+            f.write( '\n\nDNN Loss, Accuracy:\n')
         f.write(str(report))
 
         if self.crossValResults is not None:
@@ -186,6 +204,10 @@ class Dnn(object):
             f.write("Cross val results: %.2f%% (%.2f%%)" % (self.crossValResults.mean()*100, self.crossValResults.std()*100))
 
     def rocCurve(self,doEvalSet=False):
+
+        if self.doRegression:
+            print 'Cannot make ROC curve for a regression problem, skipping'
+            return None
 
         if doEvalSet:
             rocCurve(self.model.predict(self.data.X_eval.as_matrix()), self.data.y_eval,self.output,append='_eval')
@@ -207,14 +229,14 @@ class Dnn(object):
 
         if not os.path.exists(self.output): os.makedirs(self.output)
 
-        #Plot the accuracy over the epochs
-        plt.plot(self.history.history['acc'],label='train')
-        plt.plot(self.history.history['val_acc'],label='test')
-        plt.title('model accuracy')
-        plt.ylabel('accuracy')
+        #Plot the score over the epochs
+        plt.plot(self.history.history[self.scoreType],label='train')
+        plt.plot(self.history.history['val_'+self.scoreType],label='test')
+        plt.title('model '+self.scoreType)
+        plt.ylabel(self.scoreType)
         plt.xlabel('epoch')
         plt.legend(loc='upper left')
-        plt.savefig(os.path.join(self.output,'accuracyEvolution.pdf'))
+        plt.savefig(os.path.join(self.output,'scoreEvolution.pdf'))
         plt.clf()
 
         #Plot the loss over the epochs
@@ -236,7 +258,7 @@ class Dnn(object):
 
         self.saveConfig()
         self.classificationReport(doEvalSet=doEvalSet)
-        self.rocCurve(doEvalSet=doEvalSet)
+        if not self.doRegression: self.rocCurve(doEvalSet=doEvalSet)
         self.compareTrainTest(doEvalSet=doEvalSet)
         self.plotHistory()
 
@@ -245,8 +267,8 @@ class Dnn(object):
 
     def getAccuracy(self):
 
-        if not self.accuracy:
-            self.accuracy = self.model.evaluate(self.data.X_test.as_matrix(), self.data.y_test.as_matrix(), batch_size=32)[1]
+        if not self.score:
+            self.score = self.model.evaluate(self.data.X_test.as_matrix(), self.data.y_test.as_matrix(), batch_size=32)[1]
 
-        return self.accuracy
+        return self.score
 
