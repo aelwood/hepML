@@ -1,6 +1,9 @@
 from sklearn.metrics import classification_report, roc_auc_score, roc_curve, auc
 from sklearn.model_selection import learning_curve
 from sklearn.pipeline import Pipeline
+
+from pandasPlotting.histFunctions import hist1dErrorInputs
+
 import matplotlib.pyplot as plt
 import os
 import numpy as np
@@ -95,7 +98,7 @@ def compareTrainTest(clf, X_train, y_train, X_test, y_test, output, bins=30,appe
     plt.savefig(os.path.join(output,'compareTrainTest'+append+'.pdf'))
     plt.clf()
 
-def plotDiscriminator(clf,X_test,y_test,bins=30):
+def plotDiscriminator(clf,X_test,y_test,output,bins=30):
     plt.hist(clf.decision_function(X_test[y_test==0]).ravel(),color='r', alpha=0.5, bins=bins)
     plt.hist(clf.decision_function(X_test[y_test==1]).ravel(),color='b', alpha=0.5, bins=bins)
     plt.xlabel("scikit-learn classifier output")
@@ -103,6 +106,29 @@ def plotDiscriminator(clf,X_test,y_test,bins=30):
     plt.savefig(os.path.join(output,'discriminator.pdf'))
     plt.clf()
 
+def plotPredVsTruth(y_pred,y_test,output,bins=30,append=''):
+
+    y_pred = np.array(y_pred.ravel())
+    #sort the binning
+    maxValue=max(max(y_pred),max(y_test))
+    minValue=min(0,min(min(y_pred),min(y_test)))
+
+    print maxValue,minValue
+     
+    #plt.hist(y_pred,color='r', alpha=0.5, bins=bins, range=(minValue,maxValue), label='Predicted')
+    plt.hist(y_test,color='r', alpha=0.5, bins=bins, range=(minValue,maxValue), label='Truth')
+
+    #Make a hist with errors for the predicted
+    binCentres,hist,err = hist1dErrorInputs(y_pred,weights=None,bins=bins, range=(minValue,maxValue))
+    plt.errorbar(binCentres,hist,yerr=err,drawstyle='steps-mid',fmt='o',label='Pred')
+
+    # plt.hist(y_pred,color='r', alpha=0.5, bins=bins, label='Predicted')
+    # plt.hist(y_test,color='b', alpha=0.5, bins=bins, label='Truth')
+    plt.xlabel("variable value")
+    plt.legend(loc='best')
+    if not os.path.exists(output): os.makedirs(output)
+    plt.savefig(os.path.join(output,'predVsTruth'+append+'.pdf'))
+    plt.clf()
 
 def learningCurve(model, X_train, y_train, output,
                        ylim=None, cv=None, n_jobs=1,

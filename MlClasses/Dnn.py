@@ -4,7 +4,7 @@ import os
 from keras.utils import plot_model
 from keras.wrappers.scikit_learn import KerasClassifier
 
-from MlClasses.PerformanceTests import rocCurve,compareTrainTest,classificationReport,learningCurve
+from MlClasses.PerformanceTests import rocCurve,compareTrainTest,classificationReport,learningCurve,plotPredVsTruth
 from MlClasses.Config import Config
 
 from MlFunctions.DnnFunctions import createDenseModel
@@ -56,17 +56,17 @@ class Dnn(object):
             inputSize=inputSize,outputSize=outputSize,
             hiddenLayers=hiddenLayers,dropOut=dropOut,
             activation='relu',optimizer='adam',
-            doRegression=doRegression
+            doRegression=self.doRegression
             )
         self.defaultParams = dict(
             inputSize=inputSize,outputSize=outputSize,
             hiddenLayers=hiddenLayers,dropOut=dropOut,
             activation='relu',optimizer='adam',
-            doRegression=doRegression
+            doRegression=self.doRegression
             )
 
         #Add stuff to the config
-        self.config.addToConfig('doRegression',doRegression)
+        self.config.addToConfig('doRegression',self.doRegression)
         self.config.addToConfig('inputSize',inputSize)
         self.config.addToConfig('outputSize',outputSize)
         self.config.addToConfig('nEvalEvents',len(self.data.y_eval.index))
@@ -225,6 +225,16 @@ class Dnn(object):
             compareTrainTest(self.model.predict,self.data.X_train.as_matrix(),self.data.y_train.as_matrix(),\
                 self.data.X_test.as_matrix(),self.data.y_test.as_matrix(),self.output)
 
+    def plotPredVsTruth(self,doEvalSet=False):
+
+        if doEvalSet:
+            plotPredVsTruth(self.model.predict(self.data.X_eval.as_matrix()), self.data.y_eval,self.output,append='_eval')
+            plotPredVsTruth(self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,self.output,append='_dev')
+        else:
+            plotPredVsTruth(self.model.predict(self.data.X_test.as_matrix()), self.data.y_test,self.output)
+            plotPredVsTruth(self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,self.output,append='_train')
+
+
     def plotHistory(self):
 
         if not os.path.exists(self.output): os.makedirs(self.output)
@@ -258,8 +268,11 @@ class Dnn(object):
 
         self.saveConfig()
         self.classificationReport(doEvalSet=doEvalSet)
-        if not self.doRegression: self.rocCurve(doEvalSet=doEvalSet)
-        self.compareTrainTest(doEvalSet=doEvalSet)
+        if not self.doRegression: 
+            self.rocCurve(doEvalSet=doEvalSet)
+            self.compareTrainTest(doEvalSet=doEvalSet)
+        else:
+            self.plotPredVsTruth(doEvalSet=doEvalSet)
         self.plotHistory()
 
     def testPrediction(self):

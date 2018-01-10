@@ -80,11 +80,11 @@ class MlData(object):
         pass
 
 
-    def prepare(self,evalSize=0.0, testSize=0.33,limitSize=None):
+    def prepare(self,evalSize=0.0, testSize=0.33,limitSize=None,standardise=True):
         '''Convenience function to remove duplicates, split and standardise'''
         self.removeDuplicates()
         self.split(evalSize=evalSize,testSize=testSize,limitSize=limitSize)
-        self.standardise() #This needs to be done after the split to not leak info into the test set
+        if standardise: self.standardise() #This needs to be done after the split to not leak info into the test set
 
 
 

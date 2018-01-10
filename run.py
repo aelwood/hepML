@@ -20,7 +20,7 @@ from root_numpy import rec2array
 
 
 nInputFiles=5
-limitSize=20000#None #Make this an integer N_events if you want to limit input
+limitSize=10000#None #Make this an integer N_events if you want to limit input
 
 makeDfs=False
 saveDfs=True #Save the dataframes if they're remade
@@ -34,28 +34,31 @@ plotFeatureImportances=False
 doBDT=False
 doDNN=True
 doCrossVal=False
-makeLearningCurve=True
+makeLearningCurve=False
 doGridSearch=False #if this is true do a grid search, if not use the configs
+
+doRegression=True
+regressionVars=['MT','MT2W','HT']
 
 #If not doing the grid search
 dnnConfigs={
-    'dnn':{'epochs':2,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0]},
+    'dnn':{'epochs':10,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0]},
     # 'dnn2l':{'epochs':10,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0]},
     # 'dnn3l':{'epochs':10,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0,1.0]},
     # 'dnndo0p5':{'epochs':10,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0]},
     # 'dnn2ldo0p5':{'epochs':10,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0,0.5]},
-    # 'dnndo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0]},
-    # 'dnn2ldo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0]},
-    # 'dnn3ldo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0,1.0]},
+    'dnndo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0]},
+    'dnn2ldo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0]},
+    'dnn3ldo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0,1.0]},
     # 'dnnSmall':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[0.3]},
     # 'dnn2lSmall':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.3]},
     # 'dnn3lSmall':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.5,0.3]},
 
     #Bests
     #4 vector
-    'dnnBest4Vec':{'epochs':5,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnnBestGram':{'epochs':5,'batch_size':32,'dropOut':0.25,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
-    'dnn4lGood':{'epochs':5,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0,2.0,2.0]},
+    # 'dnnBest4Vec':{'epochs':5,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0,2.0]},
+    # 'dnnBestGram':{'epochs':5,'batch_size':32,'dropOut':0.25,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
+    # 'dnn4lGood':{'epochs':5,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0,2.0,2.0]},
         }
 
 #If doing the grid search
@@ -203,11 +206,11 @@ if __name__=='__main__':
 
             # 'gramBL':['signal','gram','selJetB','lep_type'],
             #
-            # 'gramMT':['signal','gram','MT'],
-            #
-            # 'gramMT2W':['signal','gram','MT2W'],
-            #
-            # 'gramHT':['signal','gram','HT'],
+            'gramMT':['signal','gram','MT'],
+
+            'gramMT2W':['signal','gram','MT2W'],
+
+            'gramHT':['signal','gram','HT'],
             #
             # #The 4 vectors only
             # 'fourVector':['signal',
@@ -218,17 +221,17 @@ if __name__=='__main__':
             # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
             # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
             #
-            # 'fourVectorMT':['signal',
-            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','MT'],
-            #
-            # 'fourVectorMT2W':['signal',
-            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','MT2W'],
-            #
-            # 'fourVectorHT':['signal',
-            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','HT'],
+            'fourVectorMT':['signal',
+            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','MT'],
+
+            'fourVectorMT2W':['signal',
+            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','MT2W'],
+
+            'fourVectorHT':['signal',
+            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','HT'],
             #
             # #A vanilla analysis with HL variables and lead 3 jets
             # 'vanilla':['signal','HT','MET','MT','MT2W','n_jet','lep_type'
@@ -286,7 +289,7 @@ if __name__=='__main__':
                 bdt.setup()
                 bdt.gridSearch(param_grid=bdtGridParams,kfolds=3,n_jobs=4)
 
-            else:
+            elif not doRegression:
                 #Start with a BDT from sklearn (ala TMVA)
                 print 'Defining and fitting BDT'
                 bdt = Bdt(mlData,'testPlots/mlPlots/'+varSetName+'/bdt')
@@ -312,6 +315,25 @@ if __name__=='__main__':
                 dnn = Dnn(mlData,'testPlots/mlPlots/'+varSetName+'/dnnGridSearch')
                 dnn.setup()
                 dnn.gridSearch(param_grid=dnnGridParams,kfolds=3,epochs=20,batch_size=32,n_jobs=4)
+
+            if doRegression:
+
+                for name,config in dnnConfigs.iteritems():
+
+                    for regressionVar in regressionVars:
+
+                        if regressionVar not in varSet: continue
+
+                        mlDataRegression = MlData(combinedToRun.drop('signal'),regressionVar)
+                        mlDataRegression.prepare(evalSize=0.0,testSize=0.2,limitSize=limitSize,standardise=False)
+
+                        print 'Defining and fitting DNN',name,'Regression',regressionVar
+                        dnn = Dnn(mlDataRegression,'testPlots/mlPlots/regression/'+varSetName+'/'+name,doRegression=True)
+                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'])
+                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
+
+                        print ' > Producing diagnostics'
+                        dnn.diagnostics()
 
             else:
                 #Now lets move on to a deep neural net 
@@ -339,7 +361,7 @@ if __name__=='__main__':
 
     pass # end of variable set loop
 
-    if not doGridSearch:
+    if not doGridSearch and not doRegression:
 
         # #Now compare all the different versions
         # compareMl = ComparePerformances(trainedModels,output='testPlots/mlPlots/comparisons')
