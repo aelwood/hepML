@@ -30,9 +30,10 @@ Or, for a more complete experience, setup with anaconda:
 
     - ```conda env create -f environment.yml```
 
-   - Or you can do a generic install of all the relevant tools:
+   - Or you can do a generic install of all the relevant tools (e.g. on maxwell max-display):
    
     - ```conda create -n hepML -c nlesc root root_numpy keras pandas seaborn scikit-learn tensorflow tensorflow-gpu pydot```
+     - Only include tensorflow-gpu if a graphics card is available, otherwise there can be errors
     - NOTE: I've had problems on some systems getting root to install, so you can optionally leave out root and root_numpy if there is an error and install them separately
 
    - root and numpy are installed using instructions in https://nlesc.gitbooks.io/cern-root-conda-recipes/content/index.html , but the environment file should do everything
