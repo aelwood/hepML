@@ -50,7 +50,10 @@ class Dnn(object):
         inputSize=len(self.data.X_train.columns)
 
         #Find number of unique outputs
-        outputSize = len(self.data.y_train.unique())
+        if self.doRegression: 
+            outputSize = 1
+        else: 
+            outputSize = len(self.data.y_train.unique())
 
         self.model=createDenseModel(
             inputSize=inputSize,outputSize=outputSize,
@@ -158,7 +161,7 @@ class Dnn(object):
     def saveConfig(self):
 
         if not os.path.exists(self.output): os.makedirs(self.output)
-        plot_model(self.model, to_file=os.path.join(self.output,'model.ps'))
+        #plot_model(self.model, to_file=os.path.join(self.output,'model.ps'))
         self.config.saveConfig()
 
     def classificationReport(self,doEvalSet=False):
