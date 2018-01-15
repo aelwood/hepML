@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import numpy as np
 import math
-from dfConvert import convertTree
+#from dfConvert import convertTree
 
 from pandasPlotting.Plotter import Plotter
 from pandasPlotting.dfFunctions import expandArrays
@@ -16,13 +16,13 @@ from MlClasses.Dnn import Dnn
 from MlClasses.ComparePerformances import ComparePerformances
 
 from linearAlgebraFunctions import gram,addGramToFlatDF
-from root_numpy import rec2array
+#from root_numpy import rec2array
 
 
 nInputFiles=5
-limitSize=10000#None #Make this an integer N_events if you want to limit input
+limitSize=None#None #Make this an integer N_events if you want to limit input
 
-makeDfs=False
+makeDfs=False	
 saveDfs=True #Save the dataframes if they're remade
 
 makePlots=False
@@ -38,27 +38,32 @@ makeLearningCurve=False
 doGridSearch=False #if this is true do a grid search, if not use the configs
 
 doRegression=True
-regressionVars=['MT','MT2W','HT']
+regressionVars=['MT','MT2W']#,'HT']
 
 #If not doing the grid search
 dnnConfigs={
-    'dnn':{'epochs':10,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0]},
-    # 'dnn2l':{'epochs':10,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0]},
-    # 'dnn3l':{'epochs':10,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0,1.0]},
+    #'dnn':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0]},
+    #'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0]},
+    'dnn3l':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0,1.0]},
+    'dnn5l':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
+    'dnn_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[2.0]},
+    'dnn2l_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[2.0,2.0]},
+    'dnn3l_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnndo0p5':{'epochs':10,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0]},
     # 'dnn2ldo0p5':{'epochs':10,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0,0.5]},
-    'dnndo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0]},
-    'dnn2ldo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0]},
-    'dnn3ldo0p2':{'epochs':10,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0,1.0]},
+    # 'dnndo0p2':{'epochs':30,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0]},
+    # 'dnn2ldo0p2':{'epochs':30,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0]},
+    # 'dnn3ldo0p2':{'epochs':30,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0,1.0]},
     # 'dnnSmall':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[0.3]},
     # 'dnn2lSmall':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.3]},
     # 'dnn3lSmall':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.5,0.3]},
 
     #Bests
     #4 vector
-    # 'dnnBest4Vec':{'epochs':5,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0,2.0]},
-    # 'dnnBestGram':{'epochs':5,'batch_size':32,'dropOut':0.25,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
-    # 'dnn4lGood':{'epochs':5,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0,2.0,2.0]},
+    # 'dnnBest4Vec':{'epochs':30,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0,2.0]},
+    # 'dnnBestGram':{'epochs':30,'batch_size':32,'dropOut':0.25,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
+    # 'dnn4lGood':{'epochs':30,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0,2.0,2.0]},
+    # 'dnn2lWide':{'epochs':30,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0]},
         }
 
 #If doing the grid search
@@ -99,8 +104,8 @@ if __name__=='__main__':
         bkgdFile = []#'/nfs/dust/cms/group/susy-desy/marco/training_sample_new/top_sample_0.root'
 
         for i in range(nInputFiles):
-            signalFile.append('/nfs/dust/cms/group/susy-desy/marco/training_sample_new/stop_sample_'+str(i)+'.root')
-            bkgdFile.append('/nfs/dust/cms/group/susy-desy/marco/training_sample_new/top_sample_'+str(i)+'.root')
+            signalFile.append('~/data/stop_sample_'+str(i)+'.root')
+            bkgdFile.append('~/data/top_sample_'+str(i)+'.root')
 
         signal = convertTree(signalFile,signal=True,passFilePath=True,tlVectors = ['selJet','sel_lep'])
         bkgd = convertTree(bkgdFile,signal=False,passFilePath=True,tlVectors = ['selJet','sel_lep'])
