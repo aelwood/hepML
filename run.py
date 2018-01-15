@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import numpy as np
 import math
-#from dfConvert import convertTree
+from dfConvert import convertTree
 
 from pandasPlotting.Plotter import Plotter
 from pandasPlotting.dfFunctions import expandArrays
@@ -16,13 +16,13 @@ from MlClasses.Dnn import Dnn
 from MlClasses.ComparePerformances import ComparePerformances
 
 from linearAlgebraFunctions import gram,addGramToFlatDF
-#from root_numpy import rec2array
+from root_numpy import rec2array
 
 
-nInputFiles=5
+nInputFiles=20
 limitSize=None#None #Make this an integer N_events if you want to limit input
 
-makeDfs=False	
+makeDfs=False
 saveDfs=True #Save the dataframes if they're remade
 
 makePlots=False
@@ -38,7 +38,7 @@ makeLearningCurve=False
 doGridSearch=False #if this is true do a grid search, if not use the configs
 
 doRegression=True
-regressionVars=['MT','MT2W']#,'HT']
+regressionVars=['MT2W']#,'HT']
 
 #If not doing the grid search
 dnnConfigs={
@@ -46,9 +46,11 @@ dnnConfigs={
     #'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0]},
     'dnn3l':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0,1.0]},
     'dnn5l':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
-    'dnn_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[2.0]},
+    #'dnn_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[2.0]},
     'dnn2l_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[2.0,2.0]},
     'dnn3l_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[2.0,2.0,2.0]},
+    'dnn4l_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
+    'dnn5l_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[2.0,2.0,2.0,2.0,2.0]},
     # 'dnndo0p5':{'epochs':10,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0]},
     # 'dnn2ldo0p5':{'epochs':10,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0,0.5]},
     # 'dnndo0p2':{'epochs':30,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0]},
@@ -104,8 +106,8 @@ if __name__=='__main__':
         bkgdFile = []#'/nfs/dust/cms/group/susy-desy/marco/training_sample_new/top_sample_0.root'
 
         for i in range(nInputFiles):
-            signalFile.append('~/data/stop_sample_'+str(i)+'.root')
-            bkgdFile.append('~/data/top_sample_'+str(i)+'.root')
+            signalFile.append('/nfs/dust/cms/group/susy-desy/marco/training_sample_new/stop_sample_'+str(i)+'.root')
+            bkgdFile.append('/nfs/dust/cms/group/susy-desy/marco/training_sample_new/top_sample_'+str(i)+'.root')
 
         signal = convertTree(signalFile,signal=True,passFilePath=True,tlVectors = ['selJet','sel_lep'])
         bkgd = convertTree(bkgdFile,signal=False,passFilePath=True,tlVectors = ['selJet','sel_lep'])
@@ -329,7 +331,14 @@ if __name__=='__main__':
 
                         if regressionVar not in varSet: continue
 
-                        mlDataRegression = MlData(combinedToRun.drop('signal'),regressionVar)
+                        #Drop unconverged events for MT2
+                        if regressionVar is 'MT2W': 
+                            toRunRegression=combinedToRun[combinedToRun.MT2W!=999.0]
+                        else:
+                            toRunRegression=combinedToRun
+                        
+
+                        mlDataRegression = MlData(toRunRegression.drop('signal'),regressionVar)
                         mlDataRegression.prepare(evalSize=0.0,testSize=0.2,limitSize=limitSize,standardise=False)
 
                         print 'Defining and fitting DNN',name,'Regression',regressionVar
