@@ -1,4 +1,5 @@
 #Script to order the mean squared error from an output directory containing regression results
+# e.g. python scripts/listRegression.py testPlots/mlPlots/regression/fourVectorMT2W
 import sys
 import glob
 import os
