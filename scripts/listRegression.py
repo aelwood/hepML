@@ -30,7 +30,7 @@ for d in glob.glob(os.path.join(inDir,'*')):
 print ''
 print 'Test set results:'
 for w in sorted(test, key=test.get):
-    print train[w],'\t', w
+    print test[w],'\t', w
 print ''
 
 
