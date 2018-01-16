@@ -356,6 +356,10 @@ if __name__=='__main__':
                         dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'])
                         dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
 
+                        if makeLearningCurve:
+                            print ' > Making learning curves'
+                            dnn.learningCurve(kfolds=3,n_jobs=4)
+
                         print ' > Producing diagnostics'
                         dnn.diagnostics()
 

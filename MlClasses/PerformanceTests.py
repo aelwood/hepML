@@ -132,7 +132,7 @@ def plotPredVsTruth(y_pred,y_test,output,bins=30,append=''):
 
 def learningCurve(model, X_train, y_train, output,
                        ylim=None, cv=None, n_jobs=1,
-                       train_sizes=np.linspace(0.1, 1.0, 10, endpoint=True)):
+                       train_sizes=np.linspace(0.1, 1.0, 5, endpoint=True)):
     # taken from https://gitlab.com/Contreras/hepML/blob/master/visualization/plotter.py
 
     """
