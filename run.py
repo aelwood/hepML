@@ -42,23 +42,33 @@ regressionVars=['MT2W']#,'HT']
 
 #If not doing the grid search
 dnnConfigs={
-    #'dnn':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0]},
-    #'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0]},
-    'dnn3l':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0,1.0]},
-    'dnn5l':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
-    #'dnn_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[2.0]},
-    'dnn2l_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[2.0,2.0]},
-    'dnn3l_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnn4l_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
-    'dnn5l_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[2.0,2.0,2.0,2.0,2.0]},
-    # 'dnndo0p5':{'epochs':10,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0]},
-    # 'dnn2ldo0p5':{'epochs':10,'batch_size':32,'dropOut':0.5,'hiddenLayers':[1.0,0.5]},
-    # 'dnndo0p2':{'epochs':30,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0]},
-    # 'dnn2ldo0p2':{'epochs':30,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0]},
-    # 'dnn3ldo0p2':{'epochs':30,'batch_size':32,'dropOut':0.2,'hiddenLayers':[1.0,1.0,1.0]},
-    # 'dnnSmall':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[0.3]},
-    # 'dnn2lSmall':{'epochs':20,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.3]},
-    # 'dnn3lSmall':{'epochs':40,'batch_size':32,'dropOut':None,'hiddenLayers':[0.66,0.5,0.3]},
+    #'dnn':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+    #'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
+    # 'dnn3l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
+    # 'dnn5l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
+    #'dnn_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0]},
+    # 'dnn2l_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0]},
+    # 'dnn3l_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    # 'dnn4l_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
+    # 'dnn5l_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0,2.0]},
+
+    'dnn_l2Reg0p01':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':0.1,'hiddenLayers':[1.0]},
+    'dnn2l_l2Reg0p01':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':0.1,'hiddenLayers':[1.0,1.0]},
+    'dnn3l_l2Reg0p01':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':0.1,'hiddenLayers':[1.0,1.0,1.0]},
+    'dnn5l_l2Reg0p01':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':0.1,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
+    'dnn2l_2p0n_l2Reg0p01':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':0.1,'hiddenLayers':[2.0,2.0]},
+    'dnn3l_2p0n_l2Reg0p01':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':0.1,'hiddenLayers':[2.0,2.0,2.0]},
+    'dnn4l_2p0n_l2Reg0p01':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':0.1,'hiddenLayers':[2.0,2.0,2.0,2.0]},
+    'dnn5l_2p0n_l2Reg0p01':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':0.1,'hiddenLayers':[2.0,2.0,2.0,2.0,2.0]},
+
+    # 'dnndo0p5':{'epochs':10,'batch_size':32,'dropOut':0.5,'l2Regularization':None,'hiddenLayers':[1.0]},
+    # 'dnn2ldo0p5':{'epochs':10,'batch_size':32,'dropOut':0.5,'l2Regularization':None,'hiddenLayers':[1.0,0.5]},
+    # 'dnndo0p2':{'epochs':30,'batch_size':32,'dropOut':0.2,'l2Regularization':None,'hiddenLayers':[1.0]},
+    # 'dnn2ldo0p2':{'epochs':30,'batch_size':32,'dropOut':0.2,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
+    # 'dnn3ldo0p2':{'epochs':30,'batch_size':32,'dropOut':0.2,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
+    # 'dnnSmall':{'epochs':20,'batch_size':32,'dropOut':None,'l2Regularization':None,'l2Regularization':None,'hiddenLayers':[0.3]},
+    # 'dnn2lSmall':{'epochs':20,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[0.66,0.3]},
+    # 'dnn3lSmall':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[0.66,0.5,0.3]},
 
     #Bests
     #4 vector
@@ -209,7 +219,7 @@ if __name__=='__main__':
 
     chosenVars = {
             #Just the gram matrix, with or without b info
-            'gram':['signal','gram'],
+            #'gram':['signal','gram'],
 
             # 'gramBL':['signal','gram','selJetB','lep_type'],
             #
@@ -343,7 +353,7 @@ if __name__=='__main__':
 
                         print 'Defining and fitting DNN',name,'Regression',regressionVar
                         dnn = Dnn(mlDataRegression,'testPlots/mlPlots/regression/'+varSetName+'/'+name,doRegression=True)
-                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'])
+                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'])
                         dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
 
                         print ' > Producing diagnostics'
@@ -354,7 +364,7 @@ if __name__=='__main__':
                 for name,config in dnnConfigs.iteritems():
                     print 'Defining and fitting DNN',name
                     dnn = Dnn(mlData,'testPlots/mlPlots/'+varSetName+'/'+name)
-                    dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'])
+                    dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'])
 
 
                     dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])

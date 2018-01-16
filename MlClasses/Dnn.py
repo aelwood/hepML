@@ -36,7 +36,7 @@ class Dnn(object):
         else:
             self.scoreType = 'accuracy'
 
-    def setup(self,hiddenLayers=[1.0],dropOut=None):
+    def setup(self,hiddenLayers=[1.0],dropOut=None,l2Regularization=None):
 
         '''Setup the neural net. Input a list of hiddenlayers
         if you fill float takes as fraction of inputs+outputs
@@ -55,29 +55,22 @@ class Dnn(object):
         else: 
             outputSize = len(self.data.y_train.unique())
 
-        self.model=createDenseModel(
-            inputSize=inputSize,outputSize=outputSize,
-            hiddenLayers=hiddenLayers,dropOut=dropOut,
-            activation='relu',optimizer='adam',
-            doRegression=self.doRegression
-            )
         self.defaultParams = dict(
             inputSize=inputSize,outputSize=outputSize,
             hiddenLayers=hiddenLayers,dropOut=dropOut,
+            l2Regularization=l2Regularization,
             activation='relu',optimizer='adam',
             doRegression=self.doRegression
             )
+        self.model=createDenseModel(**self.defaultParams)
 
         #Add stuff to the config
-        self.config.addToConfig('doRegression',self.doRegression)
-        self.config.addToConfig('inputSize',inputSize)
-        self.config.addToConfig('outputSize',outputSize)
         self.config.addToConfig('nEvalEvents',len(self.data.y_eval.index))
         self.config.addToConfig('nDevEvents',len(self.data.y_dev.index))
         self.config.addToConfig('nTrainEvents',len(self.data.y_train.index))
         self.config.addToConfig('nTestEvents',len(self.data.y_test.index))
-        self.config.addToConfig('hiddenLayers',hiddenLayers)
-        self.config.addToConfig('dropOut',dropOut)
+        for name,val in self.defaultParams.iteritems():
+            self.config.addToConfig(name,val)
 
     def fit(self,epochs=20,batch_size=32,**kwargs):
         '''Fit with training set and validate with test set'''
