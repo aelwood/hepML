@@ -29,7 +29,7 @@ class ComparePerformances(object):
         accuraciesCrossVal={}
         accuraciesCrossValError={}
         for name,model in self.models.iteritems():
-            accuracies[name]=model.accuracy
+            accuracies[name]=model.score
             if model.crossValResults is not None:
                 accuraciesCrossVal[name]=model.crossValResults.mean()
                 accuraciesCrossValError[name]=model.crossValResults.std()
@@ -37,14 +37,14 @@ class ComparePerformances(object):
                 accuraciesCrossVal[name]=0.
                 accuraciesCrossValError[name]=0.
 
-        outFile = open(os.path.join(self.output,'accuracyRank.txt'),'w')
+        outFile = open(os.path.join(self.output,'scoreRank.txt'),'w')
 
         for key, value in sorted(accuracies.iteritems(), key=lambda (k,v): (v,k)):
             outFile.write( "%s: %s\n" % (key, value))
 
         outFile.close()
 
-        outFile = open(os.path.join(self.output,'accuracyRankCrossVal.txt'),'w')
+        outFile = open(os.path.join(self.output,'scoreRankCrossVal.txt'),'w')
 
         for key, value in sorted(accuraciesCrossVal.iteritems(), key=lambda (k,v): (v,k)):
             outFile.write( "%s: %s +/- %s\n" % (key, value, accuraciesCrossValError[key]))

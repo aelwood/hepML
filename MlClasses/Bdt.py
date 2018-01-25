@@ -16,7 +16,7 @@ class Bdt(object):
         self.output = output
         self.config=Config(output=output)
 
-        self.accuracy=None
+        self.score=None
         self.crossValResults=None
 
     def setup(self,dtArgs={},bdtArgs={}):
@@ -142,8 +142,8 @@ class Bdt(object):
         return self.bdt.decision_function(self.data.X_test)
 
     def getAccuracy(self):
-        if not self.accuracy:
-            self.accuracy = self.bdt.score(self.data.X_test,self.data.y_test)
-        return self.accuracy
+        if not self.score:
+            self.score = self.bdt.score(self.data.X_test,self.data.y_test)
+        return self.score
 
 
