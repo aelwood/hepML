@@ -131,7 +131,7 @@ def plotPredVsTruth(y_pred,y_test,output,bins=30,append=''):
     plt.clf()
 
 def learningCurve(model, X_train, y_train, output,
-                       ylim=None, cv=None, n_jobs=1,
+                       ylim=None, cv=None, n_jobs=1,scoring=None,
                        train_sizes=np.linspace(0.1, 1.0, 5, endpoint=True)):
     # taken from https://gitlab.com/Contreras/hepML/blob/master/visualization/plotter.py
 
@@ -195,7 +195,7 @@ def learningCurve(model, X_train, y_train, output,
                                                                 X_train, y_train,
                                                                 train_sizes=np.linspace(0.1, 1.0, 10),
                                                                 cv=cv,
-                                                                scoring=None,
+                                                                scoring=scoring,
                                                                 exploit_incremental_learning=False,
                                                                 n_jobs=n_jobs,
                                                                 pre_dispatch="all",

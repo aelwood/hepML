@@ -34,7 +34,7 @@ class Dnn(object):
         if self.doRegression:
             self.scoreType = 'mean_squared_error'
         else:
-            self.scoreType = 'accuracy'
+            self.scoreType = 'acc'
 
     def setup(self,hiddenLayers=[1.0],dropOut=None,l2Regularization=None):
 
@@ -255,10 +255,10 @@ class Dnn(object):
         plt.savefig(os.path.join(self.output,'lossEvolution.pdf'))
         plt.clf()
 
-    def learningCurve(self,epochs=20,batch_size=32,kfolds=3,n_jobs=1):
+    def learningCurve(self,epochs=20,batch_size=32,kfolds=3,n_jobs=1,scoring=None):
         model=KerasClassifier(build_fn=createDenseModel, 
             epochs=epochs, batch_size=batch_size,verbose=0, **self.defaultParams)   
-        learningCurve(model,self.data.X_dev.as_matrix(),self.data.y_dev.as_matrix(),self.output,cv=kfolds,n_jobs=n_jobs)
+        learningCurve(model,self.data.X_dev.as_matrix(),self.data.y_dev.as_matrix(),self.output,cv=kfolds,n_jobs=n_jobs,scoring=scoring)
 
     def diagnostics(self,doEvalSet=False):
 
