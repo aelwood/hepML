@@ -32,11 +32,11 @@ class Dnn(object):
         self.doRegression = doRegression
 
         if self.doRegression:
-            self.scoreType = 'mean_squared_error'
+            self.scoreTypes = ['mean_squared_error']
         else:
-            self.scoreType = 'acc'
+            self.scoreTypes = ['acc','significance']
 
-    def setup(self,hiddenLayers=[1.0],dropOut=None,l2Regularization=None):
+    def setup(self,hiddenLayers=[1.0],dropOut=None,l2Regularization=None,loss=None):
 
         '''Setup the neural net. Input a list of hiddenlayers
         if you fill float takes as fraction of inputs+outputs
@@ -62,7 +62,7 @@ class Dnn(object):
             activation='relu',optimizer='adam',
             doRegression=self.doRegression
             )
-        self.model=createDenseModel(**self.defaultParams)
+        self.model=createDenseModel(loss=loss,**self.defaultParams)
 
         #Add stuff to the config
         self.config.addToConfig('nEvalEvents',len(self.data.y_eval.index))
@@ -183,7 +183,7 @@ class Dnn(object):
             f.write( '\n\nDNN Loss, Mean Squared Error:\n')
         else:
             classificationReport(self.model.predict_classes(X_test.as_matrix()),self.model.predict(X_test.as_matrix()),y_test,f)
-            f.write( '\n\nDNN Loss, Accuracy:\n')
+            f.write( '\n\nDNN Loss, Accuracy, Significance:\n')
         f.write(str(report)) 
 
         f.write( '\n\nPerformance on train set:\n')
@@ -192,7 +192,7 @@ class Dnn(object):
             f.write( '\n\nDNN Loss, Mean Squared Error:\n')
         else:
             classificationReport(self.model.predict_classes(X_train.as_matrix()),self.model.predict(X_train.as_matrix()),y_train,f)
-            f.write( '\n\nDNN Loss, Accuracy:\n')
+            f.write( '\n\nDNN Loss, Accuracy, Significance:\n')
         f.write(str(report))
 
         if self.crossValResults is not None:
@@ -236,14 +236,15 @@ class Dnn(object):
         if not os.path.exists(self.output): os.makedirs(self.output)
 
         #Plot the score over the epochs
-        plt.plot(self.history.history[self.scoreType],label='train')
-        plt.plot(self.history.history['val_'+self.scoreType],label='test')
-        plt.title('model '+self.scoreType)
-        plt.ylabel(self.scoreType)
-        plt.xlabel('epoch')
-        plt.legend(loc='upper left')
-        plt.savefig(os.path.join(self.output,'scoreEvolution.pdf'))
-        plt.clf()
+        for scoreType in self.scoreTypes:
+            plt.plot(self.history.history[scoreType],label='train')
+            plt.plot(self.history.history['val_'+scoreType],label='test')
+            plt.title('model '+scoreType)
+            plt.ylabel(scoreType)
+            plt.xlabel('epoch')
+            plt.legend(loc='upper left')
+            plt.savefig(os.path.join(self.output,scoreType+'Evolution.pdf'))
+            plt.clf()
 
         #Plot the loss over the epochs
         plt.plot(self.history.history['loss'],label='train')
