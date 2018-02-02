@@ -13,7 +13,7 @@ def findLayerSize(layer,refSize):
         print 'WARNING: layer must be int or float'
         return None
 
-def createDenseModel(inputSize=None,outputSize=None,hiddenLayers=[1.0],dropOut=None,l2Regularization=None,activation='relu',optimizer='adam',doRegression=False,loss=None):
+def createDenseModel(inputSize=None,outputSize=None,hiddenLayers=[1.0],dropOut=None,l2Regularization=None,activation='relu',optimizer='adam',doRegression=False,loss=None,extraMetrics=[]):
     '''
     Dropout: choose percentage to be dropped out on each hidden layer (not currently applied to input layer)
     l2Regularization: choose lambda of the regularization (ie multiplier of the penalty)
@@ -65,43 +65,50 @@ def createDenseModel(inputSize=None,outputSize=None,hiddenLayers=[1.0],dropOut=N
 
         #After the layers are added compile the model
         model.compile(loss=loss,
-            optimizer=optimizer,metrics=[significance,'accuracy'])
+            optimizer=optimizer,metrics=['accuracy']+extraMetrics)
 
     else: # if training a regression add output layer with linear activation function and mse loss
 
         model.add(Dense(1))
         if not loss: loss='mean_squared_error'
         model.compile(loss=loss,
-            optimizer=optimizer,metrics=['mean_squared_error'])
+            optimizer=optimizer,metrics=['mean_squared_error']+extraMetrics)
 
 
     return model
 
-def significanceLoss(y_true, y_pred):
-
-    #Discrete version: (undifferentiable)
-
-    # s = K.cast(K.sum(K.cast(K.all(K.cast(K.greater_equal(y_pred,0.5),'uint8')+K.cast(K.greater_equal(y_true,0.5),'uint8')),'uint8')),'float32')
-    # b = K.cast(K.sum(K.cast(K.all(K.cast(K.greater_equal(y_pred,0.5),'uint8')+K.cast(K.less(y_true,0.5),'uint8')),'uint8')),'float32')
-    # if b==0 and s==0: 
-    #     return 0
-    # else: 
-
-    #Continuous version:
-
-    s = K.sum(y_pred*y_true)
-    b = K.sum(y_pred*(1-y_true))
-
-    return -(s*s)/(s+b+K.epsilon()) #Add the epsilon to avoid dividing by 0
-
-def significance(y_true, y_pred):
-
-    #Discrete calculation of significance: (undifferentiable)
-
-    s = K.sum(K.round(y_pred)*y_true)
-    b = K.sum(K.round(y_pred)*(1-y_true))
-
-    return s/K.sqrt(s+b+K.epsilon()) #Add the epsilon to avoid dividing by 0
+def significanceLoss(expectedSignal,expectedBkgd):
+    '''Define a loss function that calculates the significance based on fixed
+    expected signal and expected background yields for a given batch size'''
 
 
+    def sigLoss(y_true,y_pred):
+        #Continuous version:
 
+        signalWeight=expectedSignal/K.sum(y_true)
+        bkgdWeight=expectedBkgd/K.sum(1-y_true)
+
+        s = signalWeight*K.sum(y_pred*y_true)
+        b = bkgdWeight*K.sum(y_pred*(1-y_true))
+
+        return -(s*s)/(s+b+K.epsilon()) #Add the epsilon to avoid dividing by 0
+
+    return sigLoss
+
+def significanceFull(expectedSignal,expectedBkgd):
+    '''Define a loss function that calculates the significance based on fixed
+    expected signal and expected background yields for a given batch size'''
+
+
+    def significance(y_true,y_pred):
+        #Discrete version
+
+        signalWeight=expectedSignal/K.sum(y_true)
+        bkgdWeight=expectedBkgd/K.sum(1-y_true)
+
+        s = signalWeight*K.sum(K.round(y_pred)*y_true)
+        b = bkgdWeight*K.sum(K.round(y_pred)*(1-y_true))
+
+        return s/K.sqrt(s+b+K.epsilon()) #Add the epsilon to avoid dividing by 0
+
+    return significance

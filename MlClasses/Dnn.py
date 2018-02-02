@@ -34,9 +34,9 @@ class Dnn(object):
         if self.doRegression:
             self.scoreTypes = ['mean_squared_error']
         else:
-            self.scoreTypes = ['acc','significance']
+            self.scoreTypes = ['acc']
 
-    def setup(self,hiddenLayers=[1.0],dropOut=None,l2Regularization=None,loss=None):
+    def setup(self,hiddenLayers=[1.0],dropOut=None,l2Regularization=None,loss=None,extraMetrics=[]):
 
         '''Setup the neural net. Input a list of hiddenlayers
         if you fill float takes as fraction of inputs+outputs
@@ -62,7 +62,12 @@ class Dnn(object):
             activation='relu',optimizer='adam',
             doRegression=self.doRegression
             )
-        self.model=createDenseModel(loss=loss,**self.defaultParams)
+        self.model=createDenseModel(loss=loss,extraMetrics=extraMetrics,**self.defaultParams)
+        for em in extraMetrics:
+            if isinstance(em,str): 
+                self.scoreTypes.append(em)
+            else:
+                self.scoreTypes.append(em.__name__)
 
         #Add stuff to the config
         self.config.addToConfig('nEvalEvents',len(self.data.y_eval.index))
@@ -77,9 +82,10 @@ class Dnn(object):
 
         #Fit the model and save the history for diagnostics
         #additionally pass the testing data for further diagnostic results
-        self.history = self.model.fit(self.data.X_train.as_matrix(), self.data.y_train.as_matrix(), 
-                validation_data=(self.data.X_test.as_matrix(),self.data.y_test.as_matrix()),
+        self.history = self.model.fit(self.data.X_train.as_matrix(), self.data.y_train.as_matrix(), sample_weight=self.data.weights_train,
+                validation_data=(self.data.X_test.as_matrix(),self.data.y_test.as_matrix(),self.data.weights_test),
                 epochs=epochs, batch_size=batch_size,**kwargs)
+
 
         #Add stuff to the config
         self.config.addLine('Test train split')
@@ -157,27 +163,31 @@ class Dnn(object):
         #plot_model(self.model, to_file=os.path.join(self.output,'model.ps'))
         self.config.saveConfig()
 
-    def classificationReport(self,doEvalSet=False):
+    def classificationReport(self,doEvalSet=False,batchSize=32):
 
         if doEvalSet: #produce report for dev and eval sets instead
             X_test=self.data.X_eval
             y_test=self.data.y_eval
+            weights_test=self.data.weights_eval
             X_train=self.data.X_dev
             y_train=self.data.y_dev
+            weights_train=self.data.weights_dev
             append='_eval'
         else:
             X_test=self.data.X_test
             y_test=self.data.y_test
+            weights_test=self.data.weights_test
             X_train=self.data.X_train
             y_train=self.data.y_train
+            weights_train=self.data.weights_train
             append=''
 
         if not os.path.exists(self.output): os.makedirs(self.output)
         f=open(os.path.join(self.output,'classificationReport'+append+'.txt'),'w')
 
         f.write( 'Performance on test set:\n')
-        report = self.model.evaluate(X_test.as_matrix(), y_test.as_matrix(), batch_size=32)
-        self.score=report[1]
+        report = self.model.evaluate(X_test.as_matrix(), y_test.as_matrix(), sample_weight=weights_test, batch_size=batchSize)
+        self.score=report
 
         if self.doRegression:
             f.write( '\n\nDNN Loss, Mean Squared Error:\n')
@@ -187,7 +197,7 @@ class Dnn(object):
         f.write(str(report)) 
 
         f.write( '\n\nPerformance on train set:\n')
-        report = self.model.evaluate(X_train.as_matrix(), y_train.as_matrix(), batch_size=32)
+        report = self.model.evaluate(X_train.as_matrix(), y_train.as_matrix(), sample_weight=weights_train, batch_size=batchSize)
         if self.doRegression:
             f.write( '\n\nDNN Loss, Mean Squared Error:\n')
         else:
@@ -261,10 +271,10 @@ class Dnn(object):
             epochs=epochs, batch_size=batch_size,verbose=0, **self.defaultParams)   
         learningCurve(model,self.data.X_dev.as_matrix(),self.data.y_dev.as_matrix(),self.output,cv=kfolds,n_jobs=n_jobs,scoring=scoring)
 
-    def diagnostics(self,doEvalSet=False):
+    def diagnostics(self,doEvalSet=False,batchSize=32):
 
         self.saveConfig()
-        self.classificationReport(doEvalSet=doEvalSet)
+        self.classificationReport(doEvalSet=doEvalSet,batchSize=batchSize)
         if not self.doRegression: 
             self.rocCurve(doEvalSet=doEvalSet)
             self.compareTrainTest(doEvalSet=doEvalSet)
@@ -275,10 +285,10 @@ class Dnn(object):
     def testPrediction(self):
         return self.model.predict(self.data.X_test.as_matrix())
 
-    def getAccuracy(self):
+    def getAccuracy(self,batchSize=32):
 
         if not self.score:
-            self.score = self.model.evaluate(self.data.X_test.as_matrix(), self.data.y_test.as_matrix(), batch_size=32)[1]
+            self.score = self.model.evaluate(self.data.X_test.as_matrix(), self.data.y_test.as_matrix(), batch_size=batchSize)
 
         return self.score
 

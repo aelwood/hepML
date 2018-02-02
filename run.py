@@ -15,7 +15,7 @@ from MlClasses.Bdt import Bdt
 from MlClasses.Dnn import Dnn
 from MlClasses.ComparePerformances import ComparePerformances
 
-from MlFunctions.DnnFunctions import significanceLoss
+from MlFunctions.DnnFunctions import significanceLoss,significanceFull
 
 from linearAlgebraFunctions import gram,addGramToFlatDF
 from root_numpy import rec2array
@@ -23,6 +23,13 @@ from root_numpy import rec2array
 
 nInputFiles=20
 limitSize=100000#None #Make this an integer N_events if you want to limit input
+
+#Use these to calculate the significance when it's used for training
+#Taken from https://twiki.cern.ch/twiki/bin/view/CMS/SummerStudent2017#SUSY
+# (dependent on batch size)
+lumi=30. #luminosity in /fb
+expectedSignal=17.6*lumi #cross section of stop sample in fb
+expectedBkgd=844000.*lumi #cross section of ttbar sample in fb
 
 makeDfs=False
 saveDfs=True #Save the dataframes if they're remade
@@ -48,8 +55,10 @@ tryNewLoss=True
 dnnConfigs={
     'dnn':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     'dnn_batch128':{'epochs':40,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-    'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
+    'dnn_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+    #'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
     #'dnn3l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
+    # 'dnn3l_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
     # 'dnn5l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
     # 'dnn_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0]},
     # 'dnn2l_2p0n':{'epochs':50,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0]},
@@ -79,8 +88,9 @@ dnnConfigs={
     #4 vector
     'dnn3l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     'dnn3l_2p0n_do0p25_batch128':{'epochs':40,'batch_size':128,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnn5l_1p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
-    'dnn4l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
+    #'dnn3l_2p0n_do0p25_batch1024':{'epochs':40,'batch_size':1024,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    # 'dnn5l_1p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
+    # 'dnn4l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
     #'dnn2lWide':{'epochs':30,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0]},
         }
 
@@ -225,8 +235,8 @@ if __name__=='__main__':
 
     chosenVars = {
             #Just the gram matrix, with or without b info
-            'gram':['signal','gram'],
-
+            # 'gram':['signal','gram'],
+            #
             # 'gramBL':['signal','gram','selJetB','lep_type'],
             #
             # 'gramMT':['signal','gram','MT'],
@@ -236,9 +246,9 @@ if __name__=='__main__':
             # 'gramHT':['signal','gram','HT'],
             #
             # #The 4 vectors only
-            'fourVector':['signal',
-            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
+            # 'fourVector':['signal',
+            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
             #
             # 'fourVectorBL':['signal','lep_type','selJetB',
             # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
@@ -375,7 +385,7 @@ if __name__=='__main__':
                 for name,config in dnnConfigs.iteritems():
                     print 'Defining and fitting DNN',name
                     dnn = Dnn(mlData,'testPlots/mlPlots/'+varSetName+'/'+name)
-                    dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'])
+                    dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],extraMetrics=[significanceFull(expectedSignal,expectedBkgd)])
                     dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
                     if doCrossVal:
                         print ' > Carrying out cross validation'
@@ -385,7 +395,7 @@ if __name__=='__main__':
                         dnn.learningCurve(kfolds=5,n_jobs=1)
 
                     print ' > Producing diagnostics'
-                    dnn.diagnostics()
+                    dnn.diagnostics(batchSize=128)
 
 
                     trainedModels[varSetName+'_'+name]=dnn
@@ -394,10 +404,10 @@ if __name__=='__main__':
 
                         print 'Defining and fitting DNN with significance loss function'
                         dnn = Dnn(mlData,'testPlots/mlPlots/sigLoss/'+varSetName+'/'+name)
-                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],loss=significanceLoss)
+                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],loss=significanceLoss(expectedSignal,expectedBkgd),extraMetrics=[significanceFull(expectedSignal,expectedBkgd)])
                         dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
                         print ' > Producing diagnostics'
-                        dnn.diagnostics()
+                        dnn.diagnostics(batchSize=128)
                         trainedModels[varSetName+'_sigLoss_'+name]=dnn
 
                 pass
@@ -413,9 +423,9 @@ if __name__=='__main__':
         compareMl.rankMethods()
         #
 
-        compareMl.compareRoc(['gram_dnn','gram_dnn3l_2p0n_do0p25','gram_dnn5l_1p0n_do0p25','gram_dnn4l_2p0n_do0p25'],append='_gramOnly')
-        compareMl.compareRoc(['fourVector_dnn','fourVector_dnn3l_2p0n_do0p25','fourVector_dnn5l_1p0n_do0p25','fourVector_dnn4l_2p0n_do0p25'],append='_fourVectorOnly')
-        compareMl.compareRoc(['fourVector_dnn','fourVector_dnn3l_2p0n_do0p25','fourVector_dnn5l_1p0n_do0p25','fourVector_dnn4l_2p0n_do0p25'],append='_fourVectorOnly')
+        # compareMl.compareRoc(['gram_dnn','gram_dnn3l_2p0n_do0p25','gram_dnn5l_1p0n_do0p25','gram_dnn4l_2p0n_do0p25'],append='_gramOnly')
+        # compareMl.compareRoc(['fourVector_dnn','fourVector_dnn3l_2p0n_do0p25','fourVector_dnn5l_1p0n_do0p25','fourVector_dnn4l_2p0n_do0p25'],append='_fourVectorOnly')
+        # compareMl.compareRoc(['fourVector_dnn','fourVector_dnn3l_2p0n_do0p25','fourVector_dnn5l_1p0n_do0p25','fourVector_dnn4l_2p0n_do0p25'],append='_fourVectorOnly')
 
 
         # #compareMl.compareRoc(['gram_dnn2l','gramMT_dnn2l','gramHT_dnn2l','gramMT2W_dnn2l','gramBL_dnn2l'],append='_gramOnlyDNN2l')
