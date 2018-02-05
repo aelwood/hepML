@@ -56,9 +56,9 @@ dnnConfigs={
     'dnn':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     'dnn_batch128':{'epochs':40,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     'dnn_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-    #'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
-    #'dnn3l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
-    # 'dnn3l_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
+    'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
+    'dnn3l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
+    'dnn3l_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
     # 'dnn5l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
     # 'dnn_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0]},
     # 'dnn2l_2p0n':{'epochs':50,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0]},
@@ -88,9 +88,9 @@ dnnConfigs={
     #4 vector
     'dnn3l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     'dnn3l_2p0n_do0p25_batch128':{'epochs':40,'batch_size':128,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    #'dnn3l_2p0n_do0p25_batch1024':{'epochs':40,'batch_size':1024,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    # 'dnn5l_1p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
-    # 'dnn4l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
+    'dnn3l_2p0n_do0p25_batch1024':{'epochs':40,'batch_size':1024,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    'dnn5l_1p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
+    'dnn4l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
     #'dnn2lWide':{'epochs':30,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0]},
         }
 
@@ -235,8 +235,8 @@ if __name__=='__main__':
 
     chosenVars = {
             #Just the gram matrix, with or without b info
-            # 'gram':['signal','gram'],
-            #
+            'gram':['signal','gram'],
+
             # 'gramBL':['signal','gram','selJetB','lep_type'],
             #
             # 'gramMT':['signal','gram','MT'],
@@ -246,9 +246,9 @@ if __name__=='__main__':
             # 'gramHT':['signal','gram','HT'],
             #
             # #The 4 vectors only
-            # 'fourVector':['signal',
-            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
+            'fourVector':['signal',
+            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
             #
             # 'fourVectorBL':['signal','lep_type','selJetB',
             # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
@@ -385,7 +385,7 @@ if __name__=='__main__':
                 for name,config in dnnConfigs.iteritems():
                     print 'Defining and fitting DNN',name
                     dnn = Dnn(mlData,'testPlots/mlPlots/'+varSetName+'/'+name)
-                    dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],extraMetrics=[significanceFull(expectedSignal,expectedBkgd)])
+                    dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],extraMetrics=[significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd)])
                     dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
                     if doCrossVal:
                         print ' > Carrying out cross validation'
@@ -404,7 +404,7 @@ if __name__=='__main__':
 
                         print 'Defining and fitting DNN with significance loss function'
                         dnn = Dnn(mlData,'testPlots/mlPlots/sigLoss/'+varSetName+'/'+name)
-                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],loss=significanceLoss(expectedSignal,expectedBkgd),extraMetrics=[significanceFull(expectedSignal,expectedBkgd)])
+                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],loss=significanceLoss(expectedSignal,expectedBkgd),extraMetrics=[significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd)])
                         dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
                         print ' > Producing diagnostics'
                         dnn.diagnostics(batchSize=128)
@@ -423,9 +423,9 @@ if __name__=='__main__':
         compareMl.rankMethods()
         #
 
-        # compareMl.compareRoc(['gram_dnn','gram_dnn3l_2p0n_do0p25','gram_dnn5l_1p0n_do0p25','gram_dnn4l_2p0n_do0p25'],append='_gramOnly')
-        # compareMl.compareRoc(['fourVector_dnn','fourVector_dnn3l_2p0n_do0p25','fourVector_dnn5l_1p0n_do0p25','fourVector_dnn4l_2p0n_do0p25'],append='_fourVectorOnly')
-        # compareMl.compareRoc(['fourVector_dnn','fourVector_dnn3l_2p0n_do0p25','fourVector_dnn5l_1p0n_do0p25','fourVector_dnn4l_2p0n_do0p25'],append='_fourVectorOnly')
+        compareMl.compareRoc(['gram_dnn','gram_dnn3l_2p0n_do0p25','gram_dnn5l_1p0n_do0p25','gram_dnn4l_2p0n_do0p25'],append='_gramOnly')
+        compareMl.compareRoc(['fourVector_dnn','fourVector_dnn3l_2p0n_do0p25','fourVector_dnn5l_1p0n_do0p25','fourVector_dnn4l_2p0n_do0p25'],append='_fourVectorOnly')
+        compareMl.compareRoc(['fourVector_dnn','fourVector_dnn3l_2p0n_do0p25','fourVector_dnn5l_1p0n_do0p25','fourVector_dnn4l_2p0n_do0p25'],append='_fourVectorOnly')
 
 
         # #compareMl.compareRoc(['gram_dnn2l','gramMT_dnn2l','gramHT_dnn2l','gramMT2W_dnn2l','gramBL_dnn2l'],append='_gramOnlyDNN2l')
@@ -439,10 +439,10 @@ if __name__=='__main__':
         # compareMl.compareRoc(['fourVector_dnn3ldo0p2','fourVectorMT_dnn3ldo0p2','fourVectorHT_dnn3ldo0p2','fourVectorMT2W_dnn3ldo0p2','fourVectorBL_dnn3ldo0p2'],append='_fourVectorOnlyDNN3ldo0p2')
         # compareMl.compareRoc(['fourVector_bdt','fourVectorMT_bdt','fourVectorHT_bdt','fourVectorMT2W_bdt','fourVectorBL_bdt'], append='_fourVectorOnlyBDT')
         #
-        # compareMl.compareRoc(['gram_dnn5l_1p0n_do0p25','gram_bdt',
-        #     'fourVector_dnn3l_2p0n_do0p25','fourVector_bdt',
-        #     'vanilla_dnn3l_2p0n_do0p25','vanilla_dnn5l_1p0n_do0p25','vanilla_bdt'],
-        #     append='_vanillaComparisons')
+        compareMl.compareRoc(['gram_dnn5l_1p0n_do0p25','gram_bdt',
+            'fourVector_dnn3l_2p0n_do0p25','fourVector_bdt',
+            'vanilla_dnn3l_2p0n_do0p25','vanilla_dnn5l_1p0n_do0p25','vanilla_bdt'],
+            append='_vanillaComparisons')
         #
 
         #DNN study

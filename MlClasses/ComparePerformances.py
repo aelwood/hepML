@@ -25,28 +25,39 @@ class ComparePerformances(object):
 
     def rankMethods(self):
 
-        accuracies={}
-        accuraciesCrossVal={}
-        accuraciesCrossValError={}
-        for name,model in self.models.iteritems():
-            accuracies[name]=model.score
-            if model.crossValResults is not None:
-                accuraciesCrossVal[name]=model.crossValResults.mean()
-                accuraciesCrossValError[name]=model.crossValResults.std()
-            else:
-                accuraciesCrossVal[name]=0.
-                accuraciesCrossValError[name]=0.
 
-        outFile = open(os.path.join(self.output,'scoreRank.txt'),'w')
+        if len(self.models)==0: 
+            print 'No models to process'
+            return None
+        
+        for i,scoreType in enumerate(self.models.values()[0].scoreTypes):
 
-        for key, value in sorted(accuracies.iteritems(), key=lambda (k,v): (v,k)):
-            outFile.write( "%s: %s\n" % (key, value))
+            accuracies={}
+            accuraciesCrossVal={}
+            accuraciesCrossValError={}
 
-        outFile.close()
+            for name,model in self.models.iteritems():
 
-        outFile = open(os.path.join(self.output,'scoreRankCrossVal.txt'),'w')
+                if scoreType not in model.scoreTypes: continue
 
-        for key, value in sorted(accuraciesCrossVal.iteritems(), key=lambda (k,v): (v,k)):
-            outFile.write( "%s: %s +/- %s\n" % (key, value, accuraciesCrossValError[key]))
+                accuracies[name]=model.score[i+1]
+                if model.crossValResults is not None:
+                    accuraciesCrossVal[name]=model.crossValResults.mean()
+                    accuraciesCrossValError[name]=model.crossValResults.std()
+                else:
+                    accuraciesCrossVal[name]=0.
+                    accuraciesCrossValError[name]=0.
 
-        outFile.close()
+            outFile = open(os.path.join(self.output,scoreType+'Rank.txt'),'w')
+
+            for key, value in sorted(accuracies.iteritems(), key=lambda (k,v): (v,k)):
+                outFile.write( "%s: %s\n" % (key, value))
+
+            outFile.close()
+
+            outFile = open(os.path.join(self.output,'scoreRankCrossVal.txt'),'w')
+
+            for key, value in sorted(accuraciesCrossVal.iteritems(), key=lambda (k,v): (v,k)):
+                outFile.write( "%s: %s +/- %s\n" % (key, value, accuraciesCrossValError[key]))
+
+            outFile.close()
