@@ -21,8 +21,8 @@ from linearAlgebraFunctions import gram,addGramToFlatDF
 from root_numpy import rec2array
 
 
-nInputFiles=20
-limitSize=100000#None #Make this an integer N_events if you want to limit input
+nInputFiles=100
+limitSize=None #Make this an integer N_events if you want to limit input
 
 #Use these to calculate the significance when it's used for training
 #Taken from https://twiki.cern.ch/twiki/bin/view/CMS/SummerStudent2017#SUSY
@@ -36,7 +36,7 @@ saveDfs=True #Save the dataframes if they're remade
 
 makePlots=False
 
-prepareInputs=False
+prepareInputs=True
 
 #ML options
 plotFeatureImportances=False
@@ -53,12 +53,14 @@ tryNewLoss=True
 
 #If not doing the grid search
 dnnConfigs={
-    'dnn':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-    'dnn_batch128':{'epochs':40,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-    'dnn_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-    'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
-    'dnn3l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
-    'dnn3l_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
+    # 'dnn':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+    # 'dnn_batch128':{'epochs':40,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     'dnn_batch2048':{'epochs':40,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     'dnn_batch4096':{'epochs':40,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+    # 'dnn_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+    # 'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
+    # 'dnn3l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
+    # 'dnn3l_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
     # 'dnn5l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
     # 'dnn_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0]},
     # 'dnn2l_2p0n':{'epochs':50,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0]},
@@ -86,11 +88,13 @@ dnnConfigs={
 
     #Bests
     #4 vector
-    'dnn3l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnn3l_2p0n_do0p25_batch128':{'epochs':40,'batch_size':128,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnn3l_2p0n_do0p25_batch1024':{'epochs':40,'batch_size':1024,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnn5l_1p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
-    'dnn4l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
+    # 'dnn3l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    # 'dnn3l_2p0n_do0p25_batch128':{'epochs':40,'batch_size':128,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    # 'dnn3l_2p0n_do0p25_batch1024':{'epochs':40,'batch_size':1024,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    'dnn3l_2p0n_do0p25_batch2048':{'epochs':40,'batch_size':2048,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    'dnn3l_2p0n_do0p25_batch4096':{'epochs':40,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    # 'dnn5l_1p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
+    #'dnn4l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
     #'dnn2lWide':{'epochs':30,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0]},
         }
 
@@ -235,8 +239,8 @@ if __name__=='__main__':
 
     chosenVars = {
             #Just the gram matrix, with or without b info
-            'gram':['signal','gram'],
-
+            # 'gram':['signal','gram'],
+            #
             # 'gramBL':['signal','gram','selJetB','lep_type'],
             #
             # 'gramMT':['signal','gram','MT'],
@@ -395,8 +399,8 @@ if __name__=='__main__':
                         dnn.learningCurve(kfolds=5,n_jobs=1)
 
                     print ' > Producing diagnostics'
-                    dnn.diagnostics(batchSize=128)
-
+                    dnn.diagnostics(batchSize=4096)
+                    dnn.makeHepPlots(expectedSignal,expectedBkgd)
 
                     trainedModels[varSetName+'_'+name]=dnn
 
@@ -407,13 +411,17 @@ if __name__=='__main__':
                         dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],loss=significanceLoss(expectedSignal,expectedBkgd),extraMetrics=[significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd)])
                         dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
                         print ' > Producing diagnostics'
-                        dnn.diagnostics(batchSize=128)
+                        dnn.diagnostics(batchSize=4096)
+                        dnn.makeHepPlots(expectedSignal,expectedBkgd)
+
                         trainedModels[varSetName+'_sigLoss_'+name]=dnn
+
 
                 pass
 
     pass # end of variable set loop
 
+    #Compare all the results
     if not doGridSearch and not doRegression:
 
         # #Now compare all the different versions

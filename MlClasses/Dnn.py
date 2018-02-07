@@ -1,13 +1,17 @@
 import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
 import os
+import pickle
 
 from keras.utils import plot_model
 from keras.wrappers.scikit_learn import KerasClassifier
 
 from MlClasses.PerformanceTests import rocCurve,compareTrainTest,classificationReport,learningCurve,plotPredVsTruth
 from MlClasses.Config import Config
-
 from MlFunctions.DnnFunctions import createDenseModel
+
+from pandasPlotting.Plotter import Plotter
 
 #For cross validation and HP tuning
 from sklearn import preprocessing
@@ -70,6 +74,7 @@ class Dnn(object):
                 self.scoreTypes.append(em.__name__)
 
         #Add stuff to the config
+        self.config.addToConfig('Vars used',self.data.X.columns.values)
         self.config.addToConfig('nEvalEvents',len(self.data.y_eval.index))
         self.config.addToConfig('nDevEvents',len(self.data.y_dev.index))
         self.config.addToConfig('nTrainEvents',len(self.data.y_train.index))
@@ -93,6 +98,20 @@ class Dnn(object):
         self.config.addToConfig('batch_size',batch_size)
         self.config.addToConfig('extra',kwargs)
         self.config.addLine('')
+
+    def save(self):
+        '''Save the model to reuse'''
+        output=os.path.join(self.output,'model')
+        if not os.path.exists(output): os.makedirs(output)
+
+        #Save the trained model with weights etc
+        self.model.save(os.path.join(output,'model.h5'))
+
+        #Save the variables used in pickle format
+        outF = open(os.path.join(output,'vars.pkl'),'w')
+        pickle.dump(self.data.X.columns.values,outF)
+        outF.close()
+        
 
     def crossValidation(self,kfolds=3,epochs=20,batch_size=32,n_jobs=4):
         '''K-means cross validation with data standardisation'''
@@ -291,4 +310,87 @@ class Dnn(object):
             self.score = self.model.evaluate(self.data.X_test.as_matrix(), self.data.y_test.as_matrix(), batch_size=batchSize)
 
         return self.score
+
+    def makeHepPlots(self,expectedSignal,expectedBackground):
+        '''Plots intended for binary signal/background classification
+        
+            - Plots significance as a function of discriminator output
+            - Plots the variables for signal and background given different classifications 
+            - If reference variables are available in the data they will also be plotted 
+            (to be implemented, MlData.referenceVars)
+        '''
+
+        if self.doRegression:
+            print 'makeHepPlots not implemented for regression'
+            return None
+
+        names = self.data.X.columns.values
+
+        #Start with all the data and standardise it
+        if self.data.standardised:
+            data = pd.DataFrame(self.data.scaler.transform(self.data.X))
+            #data = self.data.X.apply(self.data.scaler.transform)
+        else:
+            data = self.data.X
+        
+        #Then predict the results and save them
+        predictions= self.model.predict(data.as_matrix())
+
+        #Now unstandardise
+        if self.data.standardised:
+            data=pd.DataFrame(self.data.scaler.inverse_transform(data),columns=names)
+            #data = self.data.X.apply(self.data.scaler.inverse_transform)
+
+        #Add the predictions and truth to a data frame
+        # print data.columns
+        # print self.data.y
+        data['truth']=self.data.y.as_matrix()
+        data['pred']=predictions
+
+        signalSize = len(data[data.truth==1])
+        bkgdSize = len(data[data.truth==0])
+        signalWeight = float(expectedSignal)/signalSize
+        bkgdWeight = float(expectedBackground)/bkgdSize
+
+        def applyWeight(row):
+            if row.truth==1: return signalWeight
+            else: return bkgdWeight
+
+        data['weight'] = data.apply(lambda row: applyWeight(row), axis=1)
+
+        #save it for messing about
+        #data.to_pickle('dataTestSigLoss.pkl')
+
+        #Produce a cumulative histogram of signal and background (truth) as a function of score
+        #Plot it with a log scale..
+
+        h1=plt.hist(data[data.truth==0]['pred'],weights=data[data.truth==0]['weight'],bins=50,color='b',alpha=0.8,label='background',cumulative=-1)
+        h2=plt.hist(data[data.truth==1]['pred'],weights=data[data.truth==1]['weight'],bins=50,color='r',alpha=0.8,label='signal',cumulative=-1)
+        plt.yscale('log')
+        plt.legend()
+ 
+        plt.savefig(os.path.join(self.output,'cumulativeWeightedDiscriminator.pdf'))
+        plt.clf()
+
+        #From the cumulative histograms plot s/b and s/sqrt(s+b)
+        plt.plot((h1[1][:-1]+h1[1][1:])/2,h2[0]/h1[0])
+        plt.title('sig/bkgd')
+        plt.savefig(os.path.join(self.output,'sigDivBkgdDiscriminator.pdf'))
+        plt.clf()
+
+        plt.plot((h1[1][:-1]+h1[1][1:])/2,h2[0]/np.sqrt(h2[0]+h1[0]))
+        plt.title('sig/sqrt(sig+bkgd)')
+        plt.savefig(os.path.join(self.output,'sensitivityDiscriminator.pdf'))
+        plt.clf()
+
+        #Plot all other interesting variables given classification
+        p = Plotter(data,os.path.join(self.output,'allHists'))
+        p1 = Plotter(data[data.pred>0.5],os.path.join(self.output,'signalPredHists'))
+        p2 = Plotter(data[data.pred<0.5],os.path.join(self.output,'bkgdPredHists'))
+
+        p.plotAllStackedHists1D('truth',weights='weight',log=True)
+        p1.plotAllStackedHists1D('truth',weights='weight',log=True)
+        p2.plotAllStackedHists1D('truth',weights='weight',log=True)
+        
+        pass
 
