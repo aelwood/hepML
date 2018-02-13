@@ -129,7 +129,7 @@ def asimovSignificanceLoss(expectedSignal,expectedBkgd,systematic):
         b = bkgdWeight*K.sum(y_pred*(1-y_true))
         sigB=systematic*b
 
-        return -2*((s+b)*K.log((s+b)*(b+sigB*sigB)/(b*b+(s+b)*sigB*sigB+K.epsilon()))-b*b*K.log(1+sigB*sigB*s/(b*(b+sigB*sigB)))/(sigB*sigB+K.epsilon())) #Add the epsilon to avoid dividing by 0
+        return -2*((s+b)*K.log((s+b)*(b+sigB*sigB)/(b*b+(s+b)*sigB*sigB+K.epsilon())+K.epsilon())-b*b*K.log(1+sigB*sigB*s/(b*(b+sigB*sigB)+K.epsilon()))/(sigB*sigB+K.epsilon())) #Add the epsilon to avoid dividing by 0
 
     return asimovSigLoss
 
@@ -148,7 +148,7 @@ def asimovSignificanceFull(expectedSignal,expectedBkgd,systematic):
         b = bkgdWeight*K.sum(K.round(y_pred)*(1-y_true))
         sigB=systematic*b
 
-        return K.sqrt(2*((s+b)*K.log((s+b)*(b+sigB*sigB)/(b*b+(s+b)*sigB*sigB+K.epsilon()))-b*b*K.log(1+sigB*sigB*s/(b*(b+sigB*sigB)))/(sigB*sigB+K.epsilon()))) #Add the epsilon to avoid dividing by 0
+        return K.sqrt(2*((s+b)*K.log((s+b)*(b+sigB*sigB)/(b*b+(s+b)*sigB*sigB+K.epsilon())+K.epsilon())-b*b*K.log(1+sigB*sigB*s/(b*(b+sigB*sigB)+K.epsilon()))/(sigB*sigB+K.epsilon()))) #Add the epsilon to avoid dividing by 0
 
     return asimovSignificance
 

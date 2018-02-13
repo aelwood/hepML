@@ -326,39 +326,26 @@ class Dnn(object):
 
         names = self.data.X.columns.values
 
-        #Start with all the data and standardise it
-        if self.data.standardised:
-            data = pd.DataFrame(self.data.scaler.transform(self.data.X))
-            #data = self.data.X.apply(self.data.scaler.transform)
-        else:
-            data = self.data.X
-        
-        dataTest=self.data.X_test
-
         #Then predict the results and save them
-        predictions= self.model.predict(data.as_matrix())
+        predictionsTest = self.testPrediction()
 
-        #Now unstandardise
-        if self.data.standardised:
-            data=pd.DataFrame(self.data.scaler.inverse_transform(data),columns=names)
-            #data = self.data.X.apply(self.data.scaler.inverse_transform)
+        dataTest=pd.DataFrame(self.data.scaler.inverse_transform(self.data.X_test),columns=names)
 
         #Add the predictions and truth to a data frame
-        # print data.columns
-        # print self.data.y
-        data['truth']=self.data.y.as_matrix()
-        data['pred']=predictions
+        dataTest['truth']=self.data.y_test.as_matrix()
+        dataTest['pred']=predictionsTest
 
-        signalSize = len(data[data.truth==1])
-        bkgdSize = len(data[data.truth==0])
-        signalWeight = float(expectedSignal)/signalSize
-        bkgdWeight = float(expectedBackground)/bkgdSize
 
-        def applyWeight(row):
-            if row.truth==1: return signalWeight
-            else: return bkgdWeight
+        signalSizeTest = len(dataTest[dataTest.truth==1])
+        bkgdSizeTest = len(dataTest[dataTest.truth==0])
+        signalWeightTest = float(expectedSignal)/signalSizeTest
+        bkgdWeightTest = float(expectedBackground)/bkgdSizeTest
 
-        data['weight'] = data.apply(lambda row: applyWeight(row), axis=1)
+        def applyWeight(row,sw,bw):
+            if row.truth==1: return sw
+            else: return bw
+
+        dataTest['weight'] = dataTest.apply(lambda row: applyWeight(row,signalWeightTest,bkgdWeightTest), axis=1)
 
         #save it for messing about
         #data.to_pickle('dataTestSigLoss.pkl')
@@ -366,8 +353,8 @@ class Dnn(object):
         #Produce a cumulative histogram of signal and background (truth) as a function of score
         #Plot it with a log scale..
 
-        h1=plt.hist(data[data.truth==0]['pred'],weights=data[data.truth==0]['weight'],bins=50,color='b',alpha=0.8,label='background',cumulative=-1)
-        h2=plt.hist(data[data.truth==1]['pred'],weights=data[data.truth==1]['weight'],bins=50,color='r',alpha=0.8,label='signal',cumulative=-1)
+        h1=plt.hist(dataTest[dataTest.truth==0]['pred'],weights=dataTest[dataTest.truth==0]['weight'],bins=50,color='b',alpha=0.8,label='background',cumulative=-1)
+        h2=plt.hist(dataTest[dataTest.truth==1]['pred'],weights=dataTest[dataTest.truth==1]['weight'],bins=50,color='r',alpha=0.8,label='signal',cumulative=-1)
         plt.yscale('log')
         plt.legend()
  
@@ -381,23 +368,46 @@ class Dnn(object):
         sigB=systematic*b
 
         plt.plot((h1[1][:-1]+h1[1][1:])/2,s/b)
-        plt.title('sig/bkgd')
+        plt.title('sig/bkgd on test set')
         plt.savefig(os.path.join(self.output,'sigDivBkgdDiscriminator.pdf'))
         plt.clf()
 
         plt.plot((h1[1][:-1]+h1[1][1:])/2,s/np.sqrt(s+b))
-        plt.title('sig/sqrt(sig+bkgd)')
+        plt.title('sig/sqrt(sig+bkgd) on test set')
         plt.savefig(os.path.join(self.output,'sensitivityDiscriminator.pdf'))
         plt.clf()
 
         plt.plot((h1[1][:-1]+h1[1][1:])/2,
                np.sqrt(2*( (s+b) * np.log( (s+b)*(b+sigB*sigB)/(b*b+(s+b)*sigB*sigB) ) - b*b*np.log( 1+sigB*sigB*s/(b*(b+sigB*sigB)) ) / (sigB*sigB) ))
                 )
-        plt.title('asimov significance, syst '+str(systematic))
+        plt.title('asimov significance on test set, syst '+str(systematic))
         plt.savefig(os.path.join(self.output,'asimovDiscriminator.pdf'))
         plt.clf()
 
-        if makeHistograms:
+        if makeHistograms: #Do this on the full set
+
+            #Start with all the data and standardise it
+            if self.data.standardised:
+                data = pd.DataFrame(self.data.scaler.transform(self.data.X))
+                #data = self.data.X.apply(self.data.scaler.transform)
+            else:
+                data = self.data.X
+
+            predictions= self.model.predict(data.as_matrix())
+        
+            #Now unstandardise
+            if self.data.standardised:
+                data=pd.DataFrame(self.data.scaler.inverse_transform(data),columns=names)
+
+            data['truth']=self.data.y.as_matrix()
+            data['pred']=predictions
+
+            signalSize = len(data[data.truth==1])
+            bkgdSize = len(data[data.truth==0])
+            signalWeight = float(expectedSignal)/signalSize
+            bkgdWeight = float(expectedBackground)/bkgdSize
+
+            data['weight'] = data.apply(lambda row: applyWeight(row,signalWeight,bkgdWeight), axis=1)
 
             #Plot all other interesting variables given classification
             p = Plotter(data,os.path.join(self.output,'allHists'))

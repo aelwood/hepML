@@ -28,9 +28,9 @@ limitSize=400000 #Make this an integer N_events if you want to limit input
 #Taken from https://twiki.cern.ch/twiki/bin/view/CMS/SummerStudent2017#SUSY
 # (dependent on batch size)
 lumi=30. #luminosity in /fb
-expectedSignal=17.6*lumi #cross section of stop sample in fb
-expectedBkgd=844000.*lumi #cross section of ttbar sample in fb
-systematic=0.0002 #systematic for the asimov signficance
+expectedSignal=17.6*0.059*lumi #cross section of stop sample in fb times efficiency measured by Marco
+expectedBkgd=844000.*8.2e-4*lumi #cross section of ttbar sample in fb times efficiency measured by Marco
+systematic=0.1 #systematic for the asimov signficance
 
 makeDfs=False
 saveDfs=True #Save the dataframes if they're remade
@@ -51,7 +51,7 @@ doGridSearch=False #if this is true do a grid search, if not use the configs
 doRegression=False
 regressionVars=['MT2W']#,'HT']
 
-normalLoss=False
+normalLoss=True
 sigLoss=True
 asimovSigLoss=True
 
@@ -59,10 +59,10 @@ asimovSigLoss=True
 dnnConfigs={
     #'dnn':{'epochs':100,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
      'dnn_batch128':{'epochs':100,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     'dnn_batch2048':{'epochs':100,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     'dnn_batch4096':{'epochs':100,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-    'dnn_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     'dnn_batch8192':{'epochs':100,'batch_size':8192,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     # 'dnn_batch2048':{'epochs':100,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     # 'dnn_batch4096':{'epochs':100,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+    # 'dnn_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+      #'dnn_batch8192':{'epochs':100,'batch_size':8192,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
     # 'dnn3l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
     # 'dnn3l_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
@@ -94,11 +94,11 @@ dnnConfigs={
     #Bests
     #4 vector
     # 'dnn3l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnn3l_2p0n_do0p25_batch128':{'epochs':40,'batch_size':128,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnn3l_2p0n_do0p25_batch1024':{'epochs':40,'batch_size':1024,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnn3l_2p0n_do0p25_batch2048':{'epochs':40,'batch_size':2048,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnn3l_2p0n_do0p25_batch4096':{'epochs':40,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnn3l_2p0n_do0p25_batch8192':{'epochs':40,'batch_size':8192,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    # 'dnn3l_2p0n_do0p25_batch128':{'epochs':40,'batch_size':128,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    # 'dnn3l_2p0n_do0p25_batch1024':{'epochs':40,'batch_size':1024,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    # 'dnn3l_2p0n_do0p25_batch2048':{'epochs':40,'batch_size':2048,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    # 'dnn3l_2p0n_do0p25_batch4096':{'epochs':40,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    # 'dnn3l_2p0n_do0p25_batch8192':{'epochs':40,'batch_size':8192,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn5l_1p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
     #'dnn4l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
     #'dnn2lWide':{'epochs':30,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0]},
