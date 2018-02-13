@@ -311,7 +311,7 @@ class Dnn(object):
 
         return self.score
 
-    def makeHepPlots(self,expectedSignal,expectedBackground):
+    def makeHepPlots(self,expectedSignal,expectedBackground,systematic=0.0001,makeHistograms=True):
         '''Plots intended for binary signal/background classification
         
             - Plots significance as a function of discriminator output
@@ -333,6 +333,8 @@ class Dnn(object):
         else:
             data = self.data.X
         
+        dataTest=self.data.X_test
+
         #Then predict the results and save them
         predictions= self.model.predict(data.as_matrix())
 
@@ -373,24 +375,38 @@ class Dnn(object):
         plt.clf()
 
         #From the cumulative histograms plot s/b and s/sqrt(s+b)
-        plt.plot((h1[1][:-1]+h1[1][1:])/2,h2[0]/h1[0])
+
+        s=h2[0]
+        b=h1[0]
+        sigB=systematic*b
+
+        plt.plot((h1[1][:-1]+h1[1][1:])/2,s/b)
         plt.title('sig/bkgd')
         plt.savefig(os.path.join(self.output,'sigDivBkgdDiscriminator.pdf'))
         plt.clf()
 
-        plt.plot((h1[1][:-1]+h1[1][1:])/2,h2[0]/np.sqrt(h2[0]+h1[0]))
+        plt.plot((h1[1][:-1]+h1[1][1:])/2,s/np.sqrt(s+b))
         plt.title('sig/sqrt(sig+bkgd)')
         plt.savefig(os.path.join(self.output,'sensitivityDiscriminator.pdf'))
         plt.clf()
 
-        #Plot all other interesting variables given classification
-        p = Plotter(data,os.path.join(self.output,'allHists'))
-        p1 = Plotter(data[data.pred>0.5],os.path.join(self.output,'signalPredHists'))
-        p2 = Plotter(data[data.pred<0.5],os.path.join(self.output,'bkgdPredHists'))
+        plt.plot((h1[1][:-1]+h1[1][1:])/2,
+               np.sqrt(2*( (s+b) * np.log( (s+b)*(b+sigB*sigB)/(b*b+(s+b)*sigB*sigB) ) - b*b*np.log( 1+sigB*sigB*s/(b*(b+sigB*sigB)) ) / (sigB*sigB) ))
+                )
+        plt.title('asimov significance, syst '+str(systematic))
+        plt.savefig(os.path.join(self.output,'asimovDiscriminator.pdf'))
+        plt.clf()
 
-        p.plotAllStackedHists1D('truth',weights='weight',log=True)
-        p1.plotAllStackedHists1D('truth',weights='weight',log=True)
-        p2.plotAllStackedHists1D('truth',weights='weight',log=True)
-        
+        if makeHistograms:
+
+            #Plot all other interesting variables given classification
+            p = Plotter(data,os.path.join(self.output,'allHists'))
+            p1 = Plotter(data[data.pred>0.5],os.path.join(self.output,'signalPredHists'))
+            p2 = Plotter(data[data.pred<0.5],os.path.join(self.output,'bkgdPredHists'))
+
+            p.plotAllStackedHists1D('truth',weights='weight',log=True)
+            p1.plotAllStackedHists1D('truth',weights='weight',log=True)
+            p2.plotAllStackedHists1D('truth',weights='weight',log=True)
+            
         pass
 
