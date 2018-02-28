@@ -271,6 +271,9 @@ class Dnn(object):
             plt.title('model '+scoreType)
             plt.ylabel(scoreType)
             plt.xlabel('epoch')
+            #do log if a big fractional difference
+            if max(self.history.history[scoreType])>20*min(self.history.history[scoreType]):
+                plt.yscale('log')
             plt.legend(loc='upper left')
             plt.savefig(os.path.join(self.output,scoreType+'Evolution.pdf'))
             plt.clf()
@@ -281,6 +284,8 @@ class Dnn(object):
         plt.title('model loss')
         plt.ylabel('loss')
         plt.xlabel('epoch')
+        if max(self.history.history['loss'])>20*min(self.history.history['loss']):
+            plt.yscale('log')
         plt.legend(loc='upper left')
         plt.savefig(os.path.join(self.output,'lossEvolution.pdf'))
         plt.clf()
@@ -348,7 +353,7 @@ class Dnn(object):
         dataTest['weight'] = dataTest.apply(lambda row: applyWeight(row,signalWeightTest,bkgdWeightTest), axis=1)
 
         #save it for messing about
-        #data.to_pickle('dataTestSigLoss.pkl')
+        #dataTest.to_pickle('dataTestSigLoss.pkl')
 
         #Produce a cumulative histogram of signal and background (truth) as a function of score
         #Plot it with a log scale..

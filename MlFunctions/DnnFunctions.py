@@ -95,6 +95,24 @@ def significanceLoss(expectedSignal,expectedBkgd):
 
     return sigLoss
 
+def significanceLossInvert(expectedSignal,expectedBkgd):
+    '''Define a loss function that calculates the significance based on fixed
+    expected signal and expected background yields for a given batch size'''
+
+
+    def sigLossInvert(y_true,y_pred):
+        #Continuous version:
+
+        signalWeight=expectedSignal/K.sum(y_true)
+        bkgdWeight=expectedBkgd/K.sum(1-y_true)
+
+        s = signalWeight*K.sum(y_pred*y_true)
+        b = bkgdWeight*K.sum(y_pred*(1-y_true))
+
+        return (s+b)/(s*s+K.epsilon()) #Add the epsilon to avoid dividing by 0
+
+    return sigLossInvert
+
 def significanceFull(expectedSignal,expectedBkgd):
     '''Define a loss function that calculates the significance based on fixed
     expected signal and expected background yields for a given batch size'''
@@ -132,6 +150,25 @@ def asimovSignificanceLoss(expectedSignal,expectedBkgd,systematic):
         return -2*((s+b)*K.log((s+b)*(b+sigB*sigB)/(b*b+(s+b)*sigB*sigB+K.epsilon())+K.epsilon())-b*b*K.log(1+sigB*sigB*s/(b*(b+sigB*sigB)+K.epsilon()))/(sigB*sigB+K.epsilon())) #Add the epsilon to avoid dividing by 0
 
     return asimovSigLoss
+
+def asimovSignificanceLossInvert(expectedSignal,expectedBkgd,systematic):
+    '''Define a loss function that calculates the significance based on fixed
+    expected signal and expected background yields for a given batch size'''
+
+
+    def asimovSigLossInvert(y_true,y_pred):
+        #Continuous version:
+
+        signalWeight=expectedSignal/K.sum(y_true)
+        bkgdWeight=expectedBkgd/K.sum(1-y_true)
+
+        s = signalWeight*K.sum(y_pred*y_true)
+        b = bkgdWeight*K.sum(y_pred*(1-y_true))
+        sigB=systematic*b
+
+        return 1./(2*((s+b)*K.log((s+b)*(b+sigB*sigB)/(b*b+(s+b)*sigB*sigB+K.epsilon())+K.epsilon())-b*b*K.log(1+sigB*sigB*s/(b*(b+sigB*sigB)+K.epsilon()))/(sigB*sigB+K.epsilon()))) #Add the epsilon to avoid dividing by 0
+
+    return asimovSigLossInvert
 
 def asimovSignificanceFull(expectedSignal,expectedBkgd,systematic):
     '''Define a loss function that calculates the significance based on fixed

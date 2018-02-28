@@ -15,7 +15,7 @@ from MlClasses.Bdt import Bdt
 from MlClasses.Dnn import Dnn
 from MlClasses.ComparePerformances import ComparePerformances
 
-from MlFunctions.DnnFunctions import significanceLoss,significanceFull,asimovSignificanceLoss,asimovSignificanceFull,truePositive,falsePositive
+from MlFunctions.DnnFunctions import significanceLoss,significanceLossInvert,significanceFull,asimovSignificanceLoss,asimovSignificanceLossInvert,asimovSignificanceFull,truePositive,falsePositive
 
 from linearAlgebraFunctions import gram,addGramToFlatDF
 from root_numpy import rec2array
@@ -51,18 +51,20 @@ doGridSearch=False #if this is true do a grid search, if not use the configs
 doRegression=False
 regressionVars=['MT2W']#,'HT']
 
-normalLoss=True
-sigLoss=True
-asimovSigLoss=True
+normalLoss=False
+sigLoss=False
+sigLossInvert=True
+asimovSigLoss=False
+asimovSigLossInvert=True
 
 #If not doing the grid search
 dnnConfigs={
     #'dnn':{'epochs':100,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     'dnn_batch128':{'epochs':100,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     # 'dnn_batch2048':{'epochs':100,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     # 'dnn_batch4096':{'epochs':100,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     # 'dnn_batch128':{'epochs':40,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     # 'dnn_batch2048':{'epochs':40,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     'dnn_batch4096':{'epochs':80,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-      #'dnn_batch8192':{'epochs':100,'batch_size':8192,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+    # 'dnn_batch8192':{'epochs':40,'batch_size':8192,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
     # 'dnn3l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
     # 'dnn3l_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
@@ -97,7 +99,7 @@ dnnConfigs={
     # 'dnn3l_2p0n_do0p25_batch128':{'epochs':40,'batch_size':128,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch1024':{'epochs':40,'batch_size':1024,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch2048':{'epochs':40,'batch_size':2048,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    # 'dnn3l_2p0n_do0p25_batch4096':{'epochs':40,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    'dnn3l_2p0n_do0p25_batch4096':{'epochs':80,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch8192':{'epochs':40,'batch_size':8192,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn5l_1p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
     #'dnn4l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
@@ -414,7 +416,7 @@ if __name__=='__main__':
                             dnn.learningCurve(kfolds=5,n_jobs=1)
 
                         print ' > Producing diagnostics'
-                        dnn.diagnostics(batchSize=config['batch_size'])
+                        dnn.diagnostics(batchSize=8192)
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=False)
 
                         trainedModels[varSetName+'_'+name]=dnn
@@ -432,10 +434,46 @@ if __name__=='__main__':
                         dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
                         dnn.save()
                         print ' > Producing diagnostics'
-                        dnn.diagnostics(batchSize=config['batch_size'])
+                        dnn.diagnostics(batchSize=8192)
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=False)
 
                         trainedModels[varSetName+'_sigLoss_'+name]=dnn
+
+                    if sigLossInvert:
+
+                        print 'Defining and fitting DNN with significance loss function',name
+                        dnn = Dnn(mlData,'testPlots/mlPlots/sigLossInvert/'+varSetName+'/'+name)
+                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
+                                loss=significanceLossInvert(expectedSignal,expectedBkgd),
+                                extraMetrics=[
+                                    significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
+                                    asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
+                                ])
+                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
+                        dnn.save()
+                        print ' > Producing diagnostics'
+                        dnn.diagnostics(batchSize=8192)
+                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=False)
+
+                        trainedModels[varSetName+'_sigLossInvert_'+name]=dnn
+                    
+                    if asimovSigLossInvert:
+
+                        print 'Defining and fitting DNN with significance loss function',name
+                        dnn = Dnn(mlData,'testPlots/mlPlots/asimovSigLossInvert/'+varSetName+'/'+name)
+                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
+                                loss=asimovSignificanceLossInvert(expectedSignal,expectedBkgd,systematic),
+                                extraMetrics=[
+                                    significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
+                                    asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
+                                ])
+                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
+                        dnn.save()
+                        print ' > Producing diagnostics'
+                        dnn.diagnostics(batchSize=8192)
+                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=False)
+
+                        trainedModels[varSetName+'_asimovSigLossInvert_'+name]=dnn
 
                     if asimovSigLoss:
 
@@ -451,7 +489,7 @@ if __name__=='__main__':
                         dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
                         dnn.save()
                         print ' > Producing diagnostics'
-                        dnn.diagnostics(batchSize=config['batch_size'])
+                        dnn.diagnostics(batchSize=8192)
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=False)
 
                         trainedModels[varSetName+'_asimovSigLoss_'+name]=dnn
