@@ -82,6 +82,11 @@ class Dnn(object):
         for name,val in self.defaultParams.iteritems():
             self.config.addToConfig(name,val)
 
+    def recompileModel(self,loss):
+        '''Recompile the model if you want to change the loss for example'''
+        self.model.compile(loss=loss,
+            optimizer=self.model.optimizer,metrics=self.model.metrics)
+
     def fit(self,epochs=20,batch_size=32,**kwargs):
         '''Fit with training set and validate with test set'''
 
@@ -272,7 +277,7 @@ class Dnn(object):
             plt.ylabel(scoreType)
             plt.xlabel('epoch')
             #do log if a big fractional difference
-            if max(self.history.history[scoreType])>20*min(self.history.history[scoreType]):
+            if max(self.history.history[scoreType])>20*min(self.history.history[scoreType]) and min(self.history.history[scoreType])>0:
                 plt.yscale('log')
             plt.legend(loc='upper left')
             plt.savefig(os.path.join(self.output,scoreType+'Evolution.pdf'))
@@ -284,7 +289,7 @@ class Dnn(object):
         plt.title('model loss')
         plt.ylabel('loss')
         plt.xlabel('epoch')
-        if max(self.history.history['loss'])>20*min(self.history.history['loss']):
+        if max(self.history.history['loss'])>20*min(self.history.history['loss']) and min(self.history.history['loss'])>0:
             plt.yscale('log')
         plt.legend(loc='upper left')
         plt.savefig(os.path.join(self.output,'lossEvolution.pdf'))

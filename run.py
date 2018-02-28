@@ -22,7 +22,7 @@ from root_numpy import rec2array
 
 
 nInputFiles=100
-limitSize=400000 #Make this an integer N_events if you want to limit input
+limitSize=100000 #Make this an integer N_events if you want to limit input
 
 #Use these to calculate the significance when it's used for training
 #Taken from https://twiki.cern.ch/twiki/bin/view/CMS/SummerStudent2017#SUSY
@@ -53,16 +53,16 @@ regressionVars=['MT2W']#,'HT']
 
 normalLoss=False
 sigLoss=False
-sigLossInvert=True
-asimovSigLoss=False
-asimovSigLossInvert=True
+sigLossInvert=False
+asimovSigLoss=True
+asimovSigLossInvert=False
 
 #If not doing the grid search
 dnnConfigs={
     #'dnn':{'epochs':100,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
      # 'dnn_batch128':{'epochs':40,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
      # 'dnn_batch2048':{'epochs':40,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     'dnn_batch4096':{'epochs':80,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     'dnn_batch4096':{'epochs':40,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn_batch8192':{'epochs':40,'batch_size':8192,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
@@ -99,7 +99,7 @@ dnnConfigs={
     # 'dnn3l_2p0n_do0p25_batch128':{'epochs':40,'batch_size':128,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch1024':{'epochs':40,'batch_size':1024,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch2048':{'epochs':40,'batch_size':2048,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnn3l_2p0n_do0p25_batch4096':{'epochs':80,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    #'dnn3l_2p0n_do0p25_batch4096':{'epochs':80,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch8192':{'epochs':40,'batch_size':8192,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn5l_1p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
     #'dnn4l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
@@ -479,13 +479,17 @@ if __name__=='__main__':
 
                         print 'Defining and fitting DNN with asimov significance loss function',name
                         dnn = Dnn(mlData,'testPlots/mlPlots/asimovSigLoss/'+varSetName+'/'+name)
+
+                        #First set up a model that trains on the sig loss
                         dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
-                                loss=asimovSignificanceLoss(expectedSignal,expectedBkgd,systematic),
+                                loss=significanceLoss(expectedSignal,expectedBkgd),
                                 extraMetrics=[
                                     asimovSignificanceLoss(expectedSignal,expectedBkgd,systematic),asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),
                                     significanceFull(expectedSignal,expectedBkgd),truePositive,falsePositive
                                 ])
 
+                        dnn.fit(epochs=40,batch_size=config['batch_size'])
+                        dnn.recompileModel(asimovSignificanceLoss(expectedSignal,expectedBkgd,systematic))
                         dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
                         dnn.save()
                         print ' > Producing diagnostics'
