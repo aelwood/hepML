@@ -22,7 +22,7 @@ from root_numpy import rec2array
 
 
 nInputFiles=100
-limitSize=100000 #Make this an integer N_events if you want to limit input
+limitSize=None#100000 #Make this an integer N_events if you want to limit input
 
 #Use these to calculate the significance when it's used for training
 #Taken from https://twiki.cern.ch/twiki/bin/view/CMS/SummerStudent2017#SUSY
@@ -56,6 +56,7 @@ sigLoss=False
 sigLossInvert=False
 asimovSigLoss=True
 asimovSigLossInvert=False
+crossEntropyFirst=False
 
 #If not doing the grid search
 dnnConfigs={
@@ -488,7 +489,11 @@ if __name__=='__main__':
                                     significanceFull(expectedSignal,expectedBkgd),truePositive,falsePositive
                                 ])
 
-                        dnn.fit(epochs=40,batch_size=config['batch_size'])
+                        dnn.fit(epochs=5,batch_size=config['batch_size'])
+                        dnn.diagnostics(batchSize=8192,subDir='pretraining')
+                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=False,subDir='pretraining')
+
+                        #Now recompile the model with a different loss and train further
                         dnn.recompileModel(asimovSignificanceLoss(expectedSignal,expectedBkgd,systematic))
                         dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
                         dnn.save()
@@ -497,6 +502,22 @@ if __name__=='__main__':
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=False)
 
                         trainedModels[varSetName+'_asimovSigLoss_'+name]=dnn
+
+                    if crossEntropyFirst:
+                        print 'Defining and fitting DNN',name
+                        dnn = Dnn(mlData,'testPlots/mlPlots/crossEntropyFirst/'+varSetName+'/'+name)
+                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
+                                extraMetrics=[
+                                    significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
+                                    asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
+                                    ])
+                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
+                        dnn.save()
+                        print ' > Producing diagnostics'
+                        dnn.diagnostics(batchSize=8192,subDir='pretraining')
+                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=False,subDir='pretraining')
+
+                        trainedModels[varSetName+'_crossEntropyFirst_'+name]=dnn
 
 
                 pass

@@ -300,7 +300,11 @@ class Dnn(object):
             epochs=epochs, batch_size=batch_size,verbose=0, **self.defaultParams)   
         learningCurve(model,self.data.X_dev.as_matrix(),self.data.y_dev.as_matrix(),self.output,cv=kfolds,n_jobs=n_jobs,scoring=scoring)
 
-    def diagnostics(self,doEvalSet=False,batchSize=32):
+    def diagnostics(self,doEvalSet=False,batchSize=32,subDir=None):
+
+        if subDir:
+            oldOutput = self.output
+            self.output=os.path.join(self.output,subDir)
 
         self.saveConfig()
         self.classificationReport(doEvalSet=doEvalSet,batchSize=batchSize)
@@ -310,6 +314,9 @@ class Dnn(object):
         else:
             self.plotPredVsTruth(doEvalSet=doEvalSet)
         self.plotHistory()
+
+        if subDir:
+            self.output=oldOutput
 
     def testPrediction(self):
         return self.model.predict(self.data.X_test.as_matrix())
@@ -321,7 +328,7 @@ class Dnn(object):
 
         return self.score
 
-    def makeHepPlots(self,expectedSignal,expectedBackground,systematic=0.0001,makeHistograms=True):
+    def makeHepPlots(self,expectedSignal,expectedBackground,systematic=0.0001,makeHistograms=True,subDir=None):
         '''Plots intended for binary signal/background classification
         
             - Plots significance as a function of discriminator output
@@ -329,6 +336,10 @@ class Dnn(object):
             - If reference variables are available in the data they will also be plotted 
             (to be implemented, MlData.referenceVars)
         '''
+
+        if subDir:
+            oldOutput = self.output
+            self.output=os.path.join(self.output,subDir)
 
         if self.doRegression:
             print 'makeHepPlots not implemented for regression'
@@ -427,6 +438,9 @@ class Dnn(object):
             p.plotAllStackedHists1D('truth',weights='weight',log=True)
             p1.plotAllStackedHists1D('truth',weights='weight',log=True)
             p2.plotAllStackedHists1D('truth',weights='weight',log=True)
+
+        if subDir:
+            self.output=oldOutput
             
         pass
 
