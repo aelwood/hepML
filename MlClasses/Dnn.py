@@ -328,7 +328,7 @@ class Dnn(object):
 
         return self.score
 
-    def makeHepPlots(self,expectedSignal,expectedBackground,systematic=0.0001,makeHistograms=True,subDir=None):
+    def makeHepPlots(self,expectedSignal,expectedBackground,systematic=0.0001,makeHistograms=True,subDir=None,customPrediction=None):
         '''Plots intended for binary signal/background classification
         
             - Plots significance as a function of discriminator output
@@ -348,14 +348,16 @@ class Dnn(object):
         names = self.data.X.columns.values
 
         #Then predict the results and save them
-        predictionsTest = self.testPrediction()
+        if customPrediction is None:
+            predictionsTest = self.testPrediction()
+        else:
+            predictionsTest = customPrediction
 
         dataTest=pd.DataFrame(self.data.scaler.inverse_transform(self.data.X_test),columns=names)
 
         #Add the predictions and truth to a data frame
         dataTest['truth']=self.data.y_test.as_matrix()
         dataTest['pred']=predictionsTest
-
 
         signalSizeTest = len(dataTest[dataTest.truth==1])
         bkgdSizeTest = len(dataTest[dataTest.truth==0])
