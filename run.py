@@ -22,7 +22,7 @@ from root_numpy import rec2array
 
 
 nInputFiles=100
-limitSize=None#100000 #Make this an integer N_events if you want to limit input
+limitSize=50000#100000 #Make this an integer N_events if you want to limit input
 
 #Use these to calculate the significance when it's used for training
 #Taken from https://twiki.cern.ch/twiki/bin/view/CMS/SummerStudent2017#SUSY
@@ -54,16 +54,16 @@ regressionVars=['MT2W']#,'HT']
 normalLoss=False
 sigLoss=False
 sigLossInvert=False
-asimovSigLoss=True
+asimovSigLoss=False
 asimovSigLossInvert=False
-crossEntropyFirst=False
+crossEntropyFirst=True
 
 #If not doing the grid search
 dnnConfigs={
     #'dnn':{'epochs':100,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
      # 'dnn_batch128':{'epochs':40,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
      # 'dnn_batch2048':{'epochs':40,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     'dnn_batch4096':{'epochs':40,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     'dnn_batch4096':{'epochs':20,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn_batch8192':{'epochs':40,'batch_size':8192,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
@@ -504,6 +504,8 @@ if __name__=='__main__':
                         trainedModels[varSetName+'_asimovSigLoss_'+name]=dnn
 
                     if crossEntropyFirst:
+
+                        #First train and fit with the cross entropy loss function
                         print 'Defining and fitting DNN',name
                         dnn = Dnn(mlData,'testPlots/mlPlots/crossEntropyFirst/'+varSetName+'/'+name)
                         dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
@@ -511,13 +513,41 @@ if __name__=='__main__':
                                     significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
                                     asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
                                     ])
-                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
-                        dnn.save()
+                        dnn.fit(epochs=config['epochs'],batch_size=128)
                         print ' > Producing diagnostics'
-                        dnn.diagnostics(batchSize=8192,subDir='pretraining')
+                        dnn.diagnostics(batchSize=128,subDir='pretraining')
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=False,subDir='pretraining')
 
-                        trainedModels[varSetName+'_crossEntropyFirst_'+name]=dnn
+                        #Now cut away the obvious background, weight up the background events and retrain
+
+                        #Remove all x entropy background
+                        dataToPredict = combinedToRun.drop('signal',axis=1)
+                        dataToPredict = dataToPredict.loc[:,~dataToPredict.columns.duplicated()]
+                        # print '======'
+                        # print dataToPredict.columns
+                        # print dnn.data.X_train.columns
+                        dataToPredict = dnn.data.scaler.transform(dataToPredict.as_matrix())
+                        toRunXEntropyFirst = combinedToRun[dnn.model.predict(dataToPredict)>0.5]
+
+                        # print toRunXEntropyFirst.head()
+                        # print toRunXEntropyFirst.describe()
+                        # exit()
+
+                        mlDataXEntropyFirst = MlData(toRunXEntropyFirst,'signal')
+                        mlDataXEntropyFirst.prepare(evalSize=0.2,testSize=0.2,limitSize=limitSize)
+
+                        print 'Defining and fitting DNN with significance loss function',name
+                        dnn2 = Dnn(mlDataXEntropyFirst,'testPlots/mlPlots/crossEntropyFirst/'+varSetName+'/'+name)
+                        dnn2.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
+                                loss=significanceLoss(expectedSignal,expectedBkgd),
+                                extraMetrics=[
+                                    significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
+                                    asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
+                                ])
+                        dnn2.fit(epochs=config['epochs'],batch_size=config['batch_size'])
+                        print ' > Producing diagnostics'
+                        dnn2.diagnostics(batchSize=8192)
+                        dnn2.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=False)
 
 
                 pass
