@@ -53,19 +53,20 @@ regressionVars=['MT2W']#,'HT']
 
 makeHistograms=True
 
-normalLoss=True
-sigLoss=True
-sigLossInvert=True
-asimovSigLoss=True
-asimovSigLossInvert=True
-crossEntropyFirst=True
+normalLoss=False
+sigLoss=False
+sigLossInvert=False
+asimovSigLoss=False
+asimovSigLossInvert=False
+asimovSigLossBothInvert=True
+crossEntropyFirst=False
 
 #If not doing the grid search
 dnnConfigs={
     #'dnn':{'epochs':100,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
      # 'dnn_batch128':{'epochs':40,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
      # 'dnn_batch2048':{'epochs':40,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     'dnn_batch4096':{'epochs':40,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     #'dnn_batch4096':{'epochs':80,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn_batch8192':{'epochs':40,'batch_size':8192,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
@@ -463,6 +464,8 @@ if __name__=='__main__':
                     if asimovSigLossInvert:
 
                         #First set up a model that trains on the sig loss
+                        print 'Defining and fitting DNN with inverted asimov significance loss function',name
+                        dnn = Dnn(mlData,'testPlots/mlPlots/asimovSigLossInvert/'+varSetName+'/'+name)
                         dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
                                 loss=significanceLoss(expectedSignal,expectedBkgd),
                                 extraMetrics=[
@@ -483,6 +486,32 @@ if __name__=='__main__':
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms)
 
                         trainedModels[varSetName+'_asimovSigLossInvert_'+name]=dnn
+
+                    if asimovSigLossBothInvert:
+
+                        #First set up a model that trains on the sig loss
+                        print 'Defining and fitting DNN with inverted asimov significance loss function',name
+                        dnn = Dnn(mlData,'testPlots/mlPlots/asimovSigLossBothInvert/'+varSetName+'/'+name)
+                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
+                                loss=significanceLossInvert(expectedSignal,expectedBkgd),
+                                extraMetrics=[
+                                    asimovSignificanceLossInvert(expectedSignal,expectedBkgd,systematic),asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),
+                                    significanceFull(expectedSignal,expectedBkgd),truePositive,falsePositive
+                                ])
+
+                        dnn.fit(epochs=5,batch_size=config['batch_size'])
+                        dnn.diagnostics(batchSize=8192,subDir='pretraining')
+                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms,subDir='pretraining')
+
+                        #Now recompile the model with a different loss and train further
+                        dnn.recompileModel(asimovSignificanceLossInvert(expectedSignal,expectedBkgd,systematic))
+                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
+                        dnn.save()
+                        print ' > Producing diagnostics'
+                        dnn.diagnostics(batchSize=8192)
+                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms)
+
+                        trainedModels[varSetName+'_asimovSigLossBothInvert_'+name]=dnn
 
                     if asimovSigLoss:
 
