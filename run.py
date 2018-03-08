@@ -22,7 +22,7 @@ from root_numpy import rec2array
 
 
 nInputFiles=100
-limitSize=None#100000 #Make this an integer N_events if you want to limit input
+limitSize=500000#100000 #Make this an integer N_events if you want to limit input
 
 #Use these to calculate the significance when it's used for training
 #Taken from https://twiki.cern.ch/twiki/bin/view/CMS/SummerStudent2017#SUSY
@@ -51,22 +51,23 @@ doGridSearch=False #if this is true do a grid search, if not use the configs
 doRegression=False
 regressionVars=['MT2W']#,'HT']
 
-makeHistograms=True
+makeHistograms=False
 
 normalLoss=False
 sigLoss=False
 sigLossInvert=False
 asimovSigLoss=False
 asimovSigLossInvert=False
-asimovSigLossBothInvert=True
+asimovSigLossBothInvert=False
 crossEntropyFirst=False
+variableBatchSigLossInvert=True
 
 #If not doing the grid search
 dnnConfigs={
     #'dnn':{'epochs':100,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
      # 'dnn_batch128':{'epochs':40,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
      # 'dnn_batch2048':{'epochs':40,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     #'dnn_batch4096':{'epochs':80,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     'dnn_batch4096':{'epochs':80,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn_batch8192':{'epochs':40,'batch_size':8192,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
@@ -103,9 +104,9 @@ dnnConfigs={
     # 'dnn3l_2p0n_do0p25_batch128':{'epochs':40,'batch_size':128,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch1024':{'epochs':40,'batch_size':1024,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch2048':{'epochs':40,'batch_size':2048,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnn3l_2p0n_do0p25_batch4096':{'epochs':80,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    #'dnn3l_2p0n_do0p25_batch4096':{'epochs':80,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch8192':{'epochs':40,'batch_size':8192,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-     'dnn5l_1p0n_do0p25':{'epochs':80,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
+     #'dnn5l_1p0n_do0p25':{'epochs':80,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
     #'dnn4l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
     #'dnn2lWide':{'epochs':30,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0]},
         }
@@ -263,9 +264,9 @@ if __name__=='__main__':
             # 'gramHT':['signal','gram','HT'],
             #
             # #The 4 vectors only
-            'fourVector':['signal',
-            'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
-            'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
+            # 'fourVector':['signal',
+            # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
+            # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET'],
             #
             # 'fourVectorBL':['signal','lep_type','selJetB',
             # 'sel_lep_pt','sel_lep_eta','sel_lep_phi','sel_lep_m',
@@ -609,6 +610,31 @@ if __name__=='__main__':
                         finalPred = firstPred*secondPred
 
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms,customPrediction=finalPred)
+
+                    if variableBatchSigLossInvert:
+
+                        print 'Defining and fitting DNN with significance loss function',name
+
+                        dnn = Dnn(mlData,'testPlots/mlPlots/variableBatchSigLossInvert/'+varSetName+'/'+name)
+
+                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
+                                loss=significanceLossInvert(expectedSignal,expectedBkgd),
+                                extraMetrics=[
+                                    significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
+                                    asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
+                                ])
+
+                        for batch_size in [128,512,1024,2048,4096,8192,16384]:
+                            dnn.fit(epochs=20,batch_size=batch_size)
+                            dnn.diagnostics(batchSize=4096,subDir='batchSize'+str(batch_size))
+
+                        dnn.save()
+                        print ' > Producing diagnostics'
+                        dnn.diagnostics(batchSize=4096)
+                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms)
+
+                        trainedModels[varSetName+'_variableBatchSigLossInvert_'+name]=dnn
+        
 
                 pass
 

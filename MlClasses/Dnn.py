@@ -96,7 +96,6 @@ class Dnn(object):
                 validation_data=(self.data.X_test.as_matrix(),self.data.y_test.as_matrix(),self.data.weights_test),
                 epochs=epochs, batch_size=batch_size,**kwargs)
 
-
         #Add stuff to the config
         self.config.addLine('Test train split')
         self.config.addToConfig('epochs',epochs)
