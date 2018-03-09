@@ -4,7 +4,10 @@ import os
 import pandas as pd
 import numpy as np
 import math
+import time
 from dfConvert import convertTree
+
+from keras import callbacks
 
 from pandasPlotting.Plotter import Plotter
 from pandasPlotting.dfFunctions import expandArrays
@@ -20,9 +23,12 @@ from MlFunctions.DnnFunctions import significanceLoss,significanceLossInvert,sig
 from linearAlgebraFunctions import gram,addGramToFlatDF
 from root_numpy import rec2array
 
+timingFile = open('testPlots/timings.txt','w')
+#Callback to move onto the next batch after stopping
+earlyStopping = callbacks.EarlyStopping(monitor='val_loss',min_delta=0,patience=1)
 
 nInputFiles=100
-limitSize=500000#100000 #Make this an integer N_events if you want to limit input
+limitSize=None#100000 #Make this an integer N_events if you want to limit input
 
 #Use these to calculate the significance when it's used for training
 #Taken from https://twiki.cern.ch/twiki/bin/view/CMS/SummerStudent2017#SUSY
@@ -54,13 +60,13 @@ regressionVars=['MT2W']#,'HT']
 makeHistograms=False
 
 normalLoss=False
-sigLoss=False
+sigLoss=True
 sigLossInvert=False
 asimovSigLoss=False
 asimovSigLossInvert=False
 asimovSigLossBothInvert=False
 crossEntropyFirst=False
-variableBatchSigLossInvert=True
+variableBatchSigLoss=True
 
 #If not doing the grid search
 dnnConfigs={
@@ -105,8 +111,8 @@ dnnConfigs={
     # 'dnn3l_2p0n_do0p25_batch1024':{'epochs':40,'batch_size':1024,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch2048':{'epochs':40,'batch_size':2048,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     #'dnn3l_2p0n_do0p25_batch4096':{'epochs':80,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    # 'dnn3l_2p0n_do0p25_batch8192':{'epochs':40,'batch_size':8192,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-     #'dnn5l_1p0n_do0p25':{'epochs':80,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
+    #'dnn3l_2p0n_do0p25_batch8192':{'epochs':40,'batch_size':8192,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    # 'dnn5l_1p0n_do0p25':{'epochs':80,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
     #'dnn4l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
     #'dnn2lWide':{'epochs':30,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0]},
         }
@@ -307,7 +313,10 @@ if __name__=='__main__':
         for k in combined.keys():
             for v in varSet:
                 #Little trick to ensure only the start of the string is checked
-                if ' '+v+' ' in ' '+k+' ': columnsInDataFrame.append(k)
+                if varSetName is 'vanilla':
+                    if ' '+v+' ' in ' '+k+' ': columnsInDataFrame.append(k)
+                elif ' '+v in ' '+k: columnsInDataFrame.append(k)
+
 
         #Select just the features we're interested in
         #For now setting NaNs to 0 for compatibility
@@ -429,6 +438,8 @@ if __name__=='__main__':
                     if sigLoss:
 
                         print 'Defining and fitting DNN with significance loss function',name
+                        timingFile.write('\nTiming normal batch, with DNN '+name)
+                        t0=time.time()
                         dnn = Dnn(mlData,'testPlots/mlPlots/sigLoss/'+varSetName+'/'+name)
                         dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
                                 loss=significanceLoss(expectedSignal,expectedBkgd),
@@ -436,10 +447,12 @@ if __name__=='__main__':
                                     significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
                                     asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
                                 ])
-                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
+                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'],callbacks=[earlyStopping])
                         dnn.save()
                         print ' > Producing diagnostics'
                         dnn.diagnostics(batchSize=8192)
+                        t1=time.time()
+                        timingFile.write(': '+str(t1-t0)+' s\n')
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms)
 
                         trainedModels[varSetName+'_sigLoss_'+name]=dnn
@@ -611,29 +624,35 @@ if __name__=='__main__':
 
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms,customPrediction=finalPred)
 
-                    if variableBatchSigLossInvert:
+                    if variableBatchSigLoss:
 
                         print 'Defining and fitting DNN with significance loss function',name
+                        timingFile.write('\nTiming variable batch, with DNN '+name)
+                        t0=time.time()
 
-                        dnn = Dnn(mlData,'testPlots/mlPlots/variableBatchSigLossInvert/'+varSetName+'/'+name)
+                        dnn = Dnn(mlData,'testPlots/mlPlots/variableBatchSigLoss/'+varSetName+'/'+name)
 
                         dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
-                                loss=significanceLossInvert(expectedSignal,expectedBkgd),
+                                loss=significanceLoss(expectedSignal,expectedBkgd),
                                 extraMetrics=[
                                     significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
                                     asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
                                 ])
 
+
                         for batch_size in [128,512,1024,2048,4096,8192,16384]:
-                            dnn.fit(epochs=20,batch_size=batch_size)
+                            print '\nRunning with batch size '+str(batch_size)
+                            dnn.fit(epochs=100,batch_size=batch_size,callbacks=[earlyStopping])
                             dnn.diagnostics(batchSize=4096,subDir='batchSize'+str(batch_size))
 
                         dnn.save()
                         print ' > Producing diagnostics'
                         dnn.diagnostics(batchSize=4096)
+                        t1=time.time()
+                        timingFile.write(': '+str(t1-t0)+' s\n')
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms)
 
-                        trainedModels[varSetName+'_variableBatchSigLossInvert_'+name]=dnn
+                        trainedModels[varSetName+'_variableBatchSigLoss_'+name]=dnn
         
 
                 pass
