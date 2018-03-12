@@ -3,9 +3,13 @@ import pandas as pd
 import numpy as np
 import os
 import pickle
+import random
 
 from keras.utils import plot_model
 from keras.wrappers.scikit_learn import KerasClassifier
+from keras.models import load_model
+
+from lime import lime_tabular
 
 from MlClasses.PerformanceTests import rocCurve,compareTrainTest,classificationReport,learningCurve,plotPredVsTruth
 from MlClasses.Config import Config
@@ -115,7 +119,10 @@ class Dnn(object):
         outF = open(os.path.join(output,'vars.pkl'),'w')
         pickle.dump(self.data.X.columns.values,outF)
         outF.close()
-        
+
+    def load(self,pathToModel,custom_objects=None):
+        '''Load a previously saved model (in h5 format)'''
+        self.model = load_model(pathToModel)
 
     def crossValidation(self,kfolds=3,epochs=20,batch_size=32,n_jobs=4):
         '''K-means cross validation with data standardisation'''
@@ -298,6 +305,44 @@ class Dnn(object):
         model=KerasClassifier(build_fn=createDenseModel, 
             epochs=epochs, batch_size=batch_size,verbose=0, **self.defaultParams)   
         learningCurve(model,self.data.X_dev.as_matrix(),self.data.y_dev.as_matrix(),self.output,cv=kfolds,n_jobs=n_jobs,scoring=scoring)
+
+    def explainPredictions(self):
+        '''Use LIME (https://github.com/marcotcr/lime) to give local explanations for the predictions of certain points'''
+
+        explainer = lime_tabular.LimeTabularExplainer(training_data=self.data.X_train.values,  # training data
+                                                   mode='classification',
+                                                   feature_names=list(self.data.X_train),   # names of all features (regardless of type)
+                                                   class_names=['background', 'signal'],            # class names
+                                                   #class_names=[0,1],            # class names
+                                                   discretize_continuous=True,
+                                                   categorical_features= None,
+                                                   categorical_names=None,
+                                                   )
+
+        def predict_fn_keras(x): 
+            if x.ndim>=2:
+                pred=self.model.predict(x,batch_size=1)
+            else:
+                pred=self.model.predict(x.reshape(1,x.shape[-1]),batch_size=1)
+            return np.concatenate((1.-pred,pred),axis=1)
+
+        for i in range(0,10):
+            #len(self.data.X_test)
+            exp = explainer.explain_instance(data_row=self.data.X_test.values[random.randint(0,len(self.data.X_test)-1)],   # 2d numpy array, corresponding to a row
+                                     predict_fn=predict_fn_keras,  # classifier prediction probability function, 
+                                     labels=[1,],               # iterable with labels to be explained.
+                                     num_features=self.data.X_train.shape[1],      # maximum number of features present in explanation
+                                     #top_labels=0,                # explanations for the K labels with highest prediction probabilities,
+                                     #num_samples=2000,            # size of the neighborhood to learn the linear model
+                                     #distance_metric='euclidean'  # the distance metric to use for weights.
+                                     )
+
+            out = os.path.join(self.output,'explanations')
+            if not os.path.exists(out): os.makedirs(out)
+            exp.save_to_file(os.path.join(out,'explanation'+str(i)+'.html'))
+           # print exp.as_pyplot_figure()
+            exp.as_pyplot_figure().savefig(os.path.join(out,'explanation'+str(i)+'.png'))
+        pass
 
     def diagnostics(self,doEvalSet=False,batchSize=32,subDir=None):
 

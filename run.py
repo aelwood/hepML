@@ -59,14 +59,14 @@ regressionVars=['MT2W']#,'HT']
 
 makeHistograms=False
 
-normalLoss=False
+normalLoss=True
 sigLoss=True
 sigLossInvert=False
 asimovSigLoss=False
-asimovSigLossInvert=False
+asimovSigLossInvert=True
 asimovSigLossBothInvert=False
 crossEntropyFirst=False
-variableBatchSigLoss=True
+variableBatchSigLoss=False
 
 #If not doing the grid search
 dnnConfigs={
@@ -430,6 +430,7 @@ if __name__=='__main__':
                             dnn.learningCurve(kfolds=5,n_jobs=1)
 
                         print ' > Producing diagnostics'
+                        dnn.explainPredictions()
                         dnn.diagnostics(batchSize=8192)
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms)
 
@@ -450,6 +451,7 @@ if __name__=='__main__':
                         dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'],callbacks=[earlyStopping])
                         dnn.save()
                         print ' > Producing diagnostics'
+                        dnn.explainPredictions()
                         dnn.diagnostics(batchSize=8192)
                         t1=time.time()
                         timingFile.write(': '+str(t1-t0)+' s\n')
@@ -496,6 +498,7 @@ if __name__=='__main__':
                         dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
                         dnn.save()
                         print ' > Producing diagnostics'
+                        dnn.explainPredictions()
                         dnn.diagnostics(batchSize=8192)
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms)
 
