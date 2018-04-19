@@ -18,14 +18,14 @@ from MlClasses.Bdt import Bdt
 from MlClasses.Dnn import Dnn
 from MlClasses.ComparePerformances import ComparePerformances
 
-from MlFunctions.DnnFunctions import significanceLoss,significanceLossInvert,significanceFull,asimovSignificanceLoss,asimovSignificanceLossInvert,asimovSignificanceFull,truePositive,falsePositive
+from MlFunctions.DnnFunctions import significanceLoss,significanceLossInvert,significanceLoss2Invert,significanceLossInvertSqrt,significanceFull,asimovSignificanceLoss,asimovSignificanceLossInvert,asimovSignificanceFull,truePositive,falsePositive
 
 from linearAlgebraFunctions import gram,addGramToFlatDF
 from root_numpy import rec2array
 
 timingFile = open('testPlots/timings.txt','w')
 #Callback to move onto the next batch after stopping
-earlyStopping = callbacks.EarlyStopping(monitor='val_loss',min_delta=0,patience=1)
+earlyStopping = callbacks.EarlyStopping(monitor='val_loss',min_delta=0,patience=3)
 
 nInputFiles=100
 limitSize=None#100000 #Make this an integer N_events if you want to limit input
@@ -36,7 +36,7 @@ limitSize=None#100000 #Make this an integer N_events if you want to limit input
 lumi=30. #luminosity in /fb
 expectedSignal=17.6*0.059*lumi #cross section of stop sample in fb times efficiency measured by Marco
 expectedBkgd=844000.*8.2e-4*lumi #cross section of ttbar sample in fb times efficiency measured by Marco
-systematic=0.1 #systematic for the asimov signficance
+systematic=0.4 #systematic for the asimov signficance
 
 makeDfs=False
 saveDfs=True #Save the dataframes if they're remade
@@ -61,21 +61,24 @@ makeHistograms=False
 
 normalLoss=True
 sigLoss=True
-sigLossInvert=False
+sigLossInvert=True
+sigLoss2Invert=False
+sigLossInvertSqrt=False
 asimovSigLoss=False
-asimovSigLossInvert=True
-asimovSigLossBothInvert=False
+asimovSigLossInvert=False
+asimovSigLossBothInvert=True
+asimovSigLossSysts=[0.01,0.05,0.1,0.2,0.3,0.4,0.5]
 crossEntropyFirst=False
-variableBatchSigLoss=False
+variableBatchSigLossInvert=False
 
 #If not doing the grid search
 dnnConfigs={
     #'dnn':{'epochs':100,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     # 'dnn_batch128':{'epochs':40,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     # 'dnn_batch2048':{'epochs':40,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     'dnn_batch4096':{'epochs':80,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-    # 'dnn_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-    # 'dnn_batch8192':{'epochs':40,'batch_size':8192,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     # 'dnn_batch128':{'epochs':200,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     # 'dnn_batch2048':{'epochs':200,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     'dnn_batch4096':{'epochs':200,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+    # 'dnn_batch1024':{'epochs':200,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+    # 'dnn_batch8192':{'epochs':200,'batch_size':8192,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
     # 'dnn3l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
     # 'dnn3l_batch1024':{'epochs':40,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
@@ -110,9 +113,9 @@ dnnConfigs={
     # 'dnn3l_2p0n_do0p25_batch128':{'epochs':40,'batch_size':128,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch1024':{'epochs':40,'batch_size':1024,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch2048':{'epochs':40,'batch_size':2048,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    #'dnn3l_2p0n_do0p25_batch4096':{'epochs':80,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    #'dnn3l_2p0n_do0p25_batch4096':{'epochs':100,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     #'dnn3l_2p0n_do0p25_batch8192':{'epochs':40,'batch_size':8192,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    # 'dnn5l_1p0n_do0p25':{'epochs':80,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
+    #'dnn5l_1p0n_do0p25':{'epochs':100,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
     #'dnn4l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
     #'dnn2lWide':{'epochs':30,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0]},
         }
@@ -291,8 +294,8 @@ if __name__=='__main__':
             # 'selJet_phi','selJet_pt','selJet_eta','selJet_m','MET','HT'],
             #
             # #A vanilla analysis with HL variables and lead 3 jets
-            'vanilla':['signal','HT','MET','MT','MT2W','n_jet','lep_type'
-            'n_bjet','sel_lep_pt','sel_lep_eta','sel_lep_phi',
+            'vanilla':['signal','HT','MET','MT','MT2W','n_jet',
+            'n_bjet','sel_lep_pt0','sel_lep_eta0','sel_lep_phi0',
             'selJet_phi0','selJet_pt0','selJet_eta0','selJet_m0',
             'selJet_phi1','selJet_pt1','selJet_eta1','selJet_m1',
             'selJet_phi2','selJet_pt2','selJet_eta2','selJet_m2'],
@@ -322,6 +325,9 @@ if __name__=='__main__':
         #For now setting NaNs to 0 for compatibility
         combinedToRun = combined[columnsInDataFrame].copy()
         combinedToRun.fillna(0,inplace=True)
+
+        # print columnsInDataFrame
+        # print exit()
 
         #############################################################
         #Now everything is ready can start the machine learning
@@ -420,7 +426,7 @@ if __name__=='__main__':
                                     significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
                                     asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
                                     ])
-                        dnn.fit(epochs=config['epochs'],batch_size=128)
+                        dnn.fit(epochs=config['epochs'],batch_size=128,callbacks=[earlyStopping])
                         dnn.save()
                         if doCrossVal:
                             print ' > Carrying out cross validation'
@@ -432,7 +438,7 @@ if __name__=='__main__':
                         print ' > Producing diagnostics'
                         dnn.explainPredictions()
                         dnn.diagnostics(batchSize=8192)
-                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms)
+                        dnn.makeHepPlots(expectedSignal,expectedBkgd,asimovSigLossSysts,makeHistograms=makeHistograms)
 
                         trainedModels[varSetName+'_'+name]=dnn
 
@@ -455,7 +461,7 @@ if __name__=='__main__':
                         dnn.diagnostics(batchSize=8192)
                         t1=time.time()
                         timingFile.write(': '+str(t1-t0)+' s\n')
-                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms)
+                        dnn.makeHepPlots(expectedSignal,expectedBkgd,asimovSigLossSysts,makeHistograms=makeHistograms)
 
                         trainedModels[varSetName+'_sigLoss_'+name]=dnn
 
@@ -469,14 +475,52 @@ if __name__=='__main__':
                                     significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
                                     asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
                                 ])
+                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'],callbacks=[earlyStopping])
+                        dnn.save()
+                        print ' > Producing diagnostics'
+                        dnn.diagnostics(batchSize=8192)
+                        dnn.makeHepPlots(expectedSignal,expectedBkgd,asimovSigLossSysts,makeHistograms=makeHistograms)
+
+                        trainedModels[varSetName+'_sigLossInvert_'+name]=dnn
+
+                    if sigLoss2Invert:
+
+                        print 'Defining and fitting DNN with significance loss function',name
+                        dnn = Dnn(mlData,'testPlots/mlPlots/sigLoss2Invert/'+varSetName+'/'+name)
+                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
+                                loss=significanceLoss2Invert(expectedSignal,expectedBkgd),
+                                extraMetrics=[
+                                    significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
+                                    asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
+                                ])
+                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'],callbacks=[earlyStopping])
+                        dnn.save()
+                        print ' > Producing diagnostics'
+                        dnn.diagnostics(batchSize=8192)
+                        dnn.makeHepPlots(expectedSignal,expectedBkgd,asimovSigLossSysts,makeHistograms=makeHistograms)
+
+                        trainedModels[varSetName+'_sigLoss2Invert_'+name]=dnn
+
+
+                    if sigLossInvertSqrt:
+
+                        print 'Defining and fitting DNN with significance loss function',name
+                        dnn = Dnn(mlData,'testPlots/mlPlots/sigLossInvertSqrt/'+varSetName+'/'+name)
+                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
+                                loss=significanceLossInvertSqrt(expectedSignal,expectedBkgd),
+                                extraMetrics=[
+                                    significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
+                                    asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
+                                ])
                         dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
                         dnn.save()
                         print ' > Producing diagnostics'
                         dnn.diagnostics(batchSize=8192)
-                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms)
+                        dnn.makeHepPlots(expectedSignal,expectedBkgd,asimovSigLossSysts,makeHistograms=makeHistograms)
 
-                        trainedModels[varSetName+'_sigLossInvert_'+name]=dnn
+                        trainedModels[varSetName+'_sigLossInvertSqrt_'+name]=dnn
                     
+
                     if asimovSigLossInvert:
 
                         #First set up a model that trains on the sig loss
@@ -495,7 +539,7 @@ if __name__=='__main__':
 
                         #Now recompile the model with a different loss and train further
                         dnn.recompileModel(asimovSignificanceLossInvert(expectedSignal,expectedBkgd,systematic))
-                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
+                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'],callbacks=[earlyStopping])
                         dnn.save()
                         print ' > Producing diagnostics'
                         dnn.explainPredictions()
@@ -506,29 +550,33 @@ if __name__=='__main__':
 
                     if asimovSigLossBothInvert:
 
-                        #First set up a model that trains on the sig loss
-                        print 'Defining and fitting DNN with inverted asimov significance loss function',name
-                        dnn = Dnn(mlData,'testPlots/mlPlots/asimovSigLossBothInvert/'+varSetName+'/'+name)
-                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
-                                loss=significanceLossInvert(expectedSignal,expectedBkgd),
-                                extraMetrics=[
-                                    asimovSignificanceLossInvert(expectedSignal,expectedBkgd,systematic),asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),
-                                    significanceFull(expectedSignal,expectedBkgd),truePositive,falsePositive
-                                ])
+                        for chosenSyst in asimovSigLossSysts:
 
-                        dnn.fit(epochs=5,batch_size=config['batch_size'])
-                        dnn.diagnostics(batchSize=8192,subDir='pretraining')
-                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms,subDir='pretraining')
+                            systName = str(chosenSyst).replace('.','p')
 
-                        #Now recompile the model with a different loss and train further
-                        dnn.recompileModel(asimovSignificanceLossInvert(expectedSignal,expectedBkgd,systematic))
-                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
-                        dnn.save()
-                        print ' > Producing diagnostics'
-                        dnn.diagnostics(batchSize=8192)
-                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms)
+                            #First set up a model that trains on the sig loss
+                            print 'Defining and fitting DNN with inverted asimov significance loss function',name
+                            dnn = Dnn(mlData,'testPlots/mlPlots/asimovSigLossBothInvertSyst'+systName+'/'+varSetName+'/'+name)
+                            dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
+                                    loss=significanceLoss2Invert(expectedSignal,expectedBkgd),
+                                    extraMetrics=[
+                                        asimovSignificanceLossInvert(expectedSignal,expectedBkgd,chosenSyst),asimovSignificanceFull(expectedSignal,expectedBkgd,chosenSyst),
+                                        significanceFull(expectedSignal,expectedBkgd),truePositive,falsePositive
+                                    ])
 
-                        trainedModels[varSetName+'_asimovSigLossBothInvert_'+name]=dnn
+                            dnn.fit(epochs=5,batch_size=config['batch_size'])
+                            dnn.diagnostics(batchSize=8192,subDir='pretraining')
+                            dnn.makeHepPlots(expectedSignal,expectedBkgd,chosenSyst,makeHistograms=makeHistograms,subDir='pretraining')
+
+                            #Now recompile the model with a different loss and train further
+                            dnn.recompileModel(asimovSignificanceLossInvert(expectedSignal,expectedBkgd,chosenSyst))
+                            dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'],callbacks=[earlyStopping])
+                            dnn.save()
+                            print ' > Producing diagnostics'
+                            dnn.diagnostics(batchSize=8192)
+                            dnn.makeHepPlots(expectedSignal,expectedBkgd,chosenSyst,makeHistograms=makeHistograms)
+
+                            trainedModels[varSetName+'_asimovSigLossBothInvert_'+name+systName]=dnn
 
                     if asimovSigLoss:
 
@@ -627,16 +675,16 @@ if __name__=='__main__':
 
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms,customPrediction=finalPred)
 
-                    if variableBatchSigLoss:
+                    if variableBatchSigLossInvert:
 
                         print 'Defining and fitting DNN with significance loss function',name
                         timingFile.write('\nTiming variable batch, with DNN '+name)
                         t0=time.time()
 
-                        dnn = Dnn(mlData,'testPlots/mlPlots/variableBatchSigLoss/'+varSetName+'/'+name)
+                        dnn = Dnn(mlData,'testPlots/mlPlots/variableBatchSigLossInvert/'+varSetName+'/'+name)
 
                         dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
-                                loss=significanceLoss(expectedSignal,expectedBkgd),
+                                loss=significanceLossInvert(expectedSignal,expectedBkgd),
                                 extraMetrics=[
                                     significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
                                     asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
@@ -655,7 +703,7 @@ if __name__=='__main__':
                         timingFile.write(': '+str(t1-t0)+' s\n')
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms)
 
-                        trainedModels[varSetName+'_variableBatchSigLoss_'+name]=dnn
+                        trainedModels[varSetName+'_variableBatchSigLossInvert_'+name]=dnn
         
 
                 pass

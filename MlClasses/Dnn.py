@@ -372,7 +372,7 @@ class Dnn(object):
 
         return self.score
 
-    def makeHepPlots(self,expectedSignal,expectedBackground,systematic=0.0001,makeHistograms=True,subDir=None,customPrediction=None):
+    def makeHepPlots(self,expectedSignal,expectedBackground,systematics=[0.0001],makeHistograms=True,subDir=None,customPrediction=None):
         '''Plots intended for binary signal/background classification
         
             - Plots significance as a function of discriminator output
@@ -418,11 +418,13 @@ class Dnn(object):
         #dataTest.to_pickle('dataTestSigLoss.pkl')
 
         #Produce a cumulative histogram of signal and background (truth) as a function of score
-        #Plot it with a log scale..
+        #Plot it with a log scTrue
 
-        h1=plt.hist(dataTest[dataTest.truth==0]['pred'],weights=dataTest[dataTest.truth==0]['weight'],bins=50,color='b',alpha=0.8,label='background',cumulative=-1)
-        h2=plt.hist(dataTest[dataTest.truth==1]['pred'],weights=dataTest[dataTest.truth==1]['weight'],bins=50,color='r',alpha=0.8,label='signal',cumulative=-1)
+        h1=plt.hist(dataTest[dataTest.truth==0]['pred'],weights=dataTest[dataTest.truth==0]['weight'],bins=5000,color='b',alpha=0.8,label='background',cumulative=-1)
+        h2=plt.hist(dataTest[dataTest.truth==1]['pred'],weights=dataTest[dataTest.truth==1]['weight'],bins=5000,color='r',alpha=0.8,label='signal',cumulative=-1)
         plt.yscale('log')
+        plt.ylabel('Cumulative event counts / 0.02')
+        plt.xlabel('Classifier output')
         plt.legend()
  
         plt.savefig(os.path.join(self.output,'cumulativeWeightedDiscriminator.pdf'))
@@ -432,7 +434,6 @@ class Dnn(object):
 
         s=h2[0]
         b=h1[0]
-        sigB=systematic*b
 
         plt.plot((h1[1][:-1]+h1[1][1:])/2,s/b)
         plt.title('sig/bkgd on test set')
@@ -440,16 +441,20 @@ class Dnn(object):
         plt.clf()
 
         plt.plot((h1[1][:-1]+h1[1][1:])/2,s/np.sqrt(s+b))
-        plt.title('sig/sqrt(sig+bkgd) on test set')
+        plt.title('sig/sqrt(sig+bkgd) on test set, best is '+str(max(s/np.sqrt(s+b))))
         plt.savefig(os.path.join(self.output,'sensitivityDiscriminator.pdf'))
         plt.clf()
 
-        plt.plot((h1[1][:-1]+h1[1][1:])/2,
-               np.sqrt(2*( (s+b) * np.log( (s+b)*(b+sigB*sigB)/(b*b+(s+b)*sigB*sigB) ) - b*b*np.log( 1+sigB*sigB*s/(b*(b+sigB*sigB)) ) / (sigB*sigB) ))
-                )
-        plt.title('asimov significance on test set, syst '+str(systematic))
-        plt.savefig(os.path.join(self.output,'asimovDiscriminator.pdf'))
-        plt.clf()
+        for systematic in systematics:
+            sigB=systematic*b
+
+            toPlot=np.sqrt(2*( (s+b) * np.log( (s+b)*(b+sigB*sigB)/(b*b+(s+b)*sigB*sigB) ) - b*b*np.log( 1+sigB*sigB*s/(b*(b+sigB*sigB)) ) / (sigB*sigB) ))
+            plt.plot((h1[1][:-1]+h1[1][1:])/2,
+                toPlot
+                    )
+            plt.title('asimov significance on test set, syst '+str(systematic)+' best is '+str(max(toPlot)))
+            plt.savefig(os.path.join(self.output,'asimovDiscriminatorSyst'+str(systematic).replace('.','p')+'.pdf'))
+            plt.clf()
 
         if makeHistograms: #Do this on the full set
 
