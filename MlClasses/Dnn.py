@@ -24,6 +24,8 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
 
+from asimovErrors import Z,eZ
+
 
 class Dnn(object):
 
@@ -446,49 +448,56 @@ class Dnn(object):
         plt.clf()
 
         for systematic in systematics:
-            sigB=systematic*b
-
-            toPlot=np.sqrt(2*( (s+b) * np.log( (s+b)*(b+sigB*sigB)/(b*b+(s+b)*sigB*sigB) ) - b*b*np.log( 1+sigB*sigB*s/(b*(b+sigB*sigB)) ) / (sigB*sigB) ))
-            plt.plot((h1[1][:-1]+h1[1][1:])/2,
-                toPlot
-                    )
-            plt.title('asimov significance on test set, syst '+str(systematic)+' best is '+str(max(toPlot)))
+            # sigB=systematic*b
+            #
+            # toPlot=np.sqrt(2*( (s+b) * np.log( (s+b)*(b+sigB*sigB)/(b*b+(s+b)*sigB*sigB) ) - b*b*np.log( 1+sigB*sigB*s/(b*(b+sigB*sigB)) ) / (sigB*sigB) ))
+            #plt.plot((h1[1][:-1]+h1[1][1:])/2,Z(s,b,systematic))
+            toPlot = Z(s,b,systematic)
+            plt.plot((h1[1][:-1]+h1[1][1:])/2,toPlot)
+            es = signalWeightTest*np.sqrt(s/signalWeightTest)
+            eb = bkgdWeightTest*np.sqrt(b/bkgdWeightTest)
+            error=eZ(s,es,b,eb,systematic)
+            # plt.plot((h1[1][:-1]+h1[1][1:])/2,toPlot-error)
+            # plt.plot((h1[1][:-1]+h1[1][1:])/2,toPlot+error)
+            plt.fill_between((h1[1][:-1]+h1[1][1:])/2,toPlot-error,toPlot+error,linewidth=0,alpha=0.6)
+            maxIndex=np.argmax(toPlot)
+            plt.title('asimov significance on test set, syst '+str(systematic)+' best is '+str(round(toPlot[maxIndex],2))+' +/- '+str(round(error[maxIndex],2)))
             plt.savefig(os.path.join(self.output,'asimovDiscriminatorSyst'+str(systematic).replace('.','p')+'.pdf'))
             plt.clf()
 
-        if makeHistograms: #Do this on the full set
+            if makeHistograms: #Do this on the full set
 
-            #Start with all the data and standardise it
-            if self.data.standardised:
-                data = pd.DataFrame(self.data.scaler.transform(self.data.X))
-                #data = self.data.X.apply(self.data.scaler.transform)
-            else:
-                data = self.data.X
+                #Start with all the data and standardise it
+                if self.data.standardised:
+                    data = pd.DataFrame(self.data.scaler.transform(self.data.X))
+                    #data = self.data.X.apply(self.data.scaler.transform)
+                else:
+                    data = self.data.X
 
-            predictions= self.model.predict(data.as_matrix())
-        
-            #Now unstandardise
-            if self.data.standardised:
-                data=pd.DataFrame(self.data.scaler.inverse_transform(data),columns=names)
+                predictions= self.model.predict(data.as_matrix())
+            
+                #Now unstandardise
+                if self.data.standardised:
+                    data=pd.DataFrame(self.data.scaler.inverse_transform(data),columns=names)
 
-            data['truth']=self.data.y.as_matrix()
-            data['pred']=predictions
+                data['truth']=self.data.y.as_matrix()
+                data['pred']=predictions
 
-            signalSize = len(data[data.truth==1])
-            bkgdSize = len(data[data.truth==0])
-            signalWeight = float(expectedSignal)/signalSize
-            bkgdWeight = float(expectedBackground)/bkgdSize
+                signalSize = len(data[data.truth==1])
+                bkgdSize = len(data[data.truth==0])
+                signalWeight = float(expectedSignal)/signalSize
+                bkgdWeight = float(expectedBackground)/bkgdSize
 
-            data['weight'] = data.apply(lambda row: applyWeight(row,signalWeight,bkgdWeight), axis=1)
+                data['weight'] = data.apply(lambda row: applyWeight(row,signalWeight,bkgdWeight), axis=1)
 
-            #Plot all other interesting variables given classification
-            p = Plotter(data,os.path.join(self.output,'allHists'))
-            p1 = Plotter(data[data.pred>0.5],os.path.join(self.output,'signalPredHists'))
-            p2 = Plotter(data[data.pred<0.5],os.path.join(self.output,'bkgdPredHists'))
+                #Plot all other interesting variables given classification
+                p = Plotter(data,os.path.join(self.output,'allHistsSyst'+str(systematic).replace('.','p')))
+                p1 = Plotter(data[data.pred>float(maxIndex)/len(toPlot)],os.path.join(self.output,'signalPredHistsSyst'+str(systematic).replace('.','p')))
+                p2 = Plotter(data[data.pred<float(maxIndex)/len(toPlot)],os.path.join(self.output,'bkgdPredHistsSyst'+str(systematic).replace('.','p')))
 
-            p.plotAllStackedHists1D('truth',weights='weight',log=True)
-            p1.plotAllStackedHists1D('truth',weights='weight',log=True)
-            p2.plotAllStackedHists1D('truth',weights='weight',log=True)
+                p.plotAllStackedHists1D('truth',weights='weight',log=True)
+                p1.plotAllStackedHists1D('truth',weights='weight',log=True)
+                p2.plotAllStackedHists1D('truth',weights='weight',log=True)
 
         if subDir:
             self.output=oldOutput

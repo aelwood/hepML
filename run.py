@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import math
 import time
-from dfConvert import convertTree
+#from dfConvert import convertTree
 
 from keras import callbacks
 
@@ -21,7 +21,7 @@ from MlClasses.ComparePerformances import ComparePerformances
 from MlFunctions.DnnFunctions import significanceLoss,significanceLossInvert,significanceLoss2Invert,significanceLossInvertSqrt,significanceFull,asimovSignificanceLoss,asimovSignificanceLossInvert,asimovSignificanceFull,truePositive,falsePositive
 
 from linearAlgebraFunctions import gram,addGramToFlatDF
-from root_numpy import rec2array
+#from root_numpy import rec2array
 
 timingFile = open('testPlots/timings.txt','w')
 #Callback to move onto the next batch after stopping
@@ -34,9 +34,9 @@ limitSize=None#100000 #Make this an integer N_events if you want to limit input
 #Taken from https://twiki.cern.ch/twiki/bin/view/CMS/SummerStudent2017#SUSY
 # (dependent on batch size)
 lumi=300. #luminosity in /fb
-expectedSignal=17.6*0.059*lumi #cross section of stop sample in fb times efficiency measured by Marco
+expectedSignal=17.6*0.059*lumi/5 #cross section of stop sample in fb times efficiency measured by Marco
 expectedBkgd=844000.*8.2e-4*lumi #cross section of ttbar sample in fb times efficiency measured by Marco
-systematic=0.4 #systematic for the asimov signficance
+systematic=0.1 #systematic for the asimov signficance
 
 makeDfs=False
 saveDfs=True #Save the dataframes if they're remade
@@ -57,11 +57,11 @@ doGridSearch=False #if this is true do a grid search, if not use the configs
 doRegression=False
 regressionVars=['MT2W']#,'HT']
 
-makeHistograms=False
+makeHistograms=True
 
 normalLoss=True
 sigLoss=False
-sigLossInvert=True
+sigLossInvert=False
 sigLoss2Invert=False
 sigLossInvertSqrt=False
 asimovSigLoss=False
@@ -74,10 +74,10 @@ variableBatchSigLossInvert=False
 #If not doing the grid search
 dnnConfigs={
     #'dnn':{'epochs':100,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     # 'dnn_batch128':{'epochs':200,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     # 'dnn_batch2048':{'epochs':200,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-     'dnn_batch4096':{'epochs':200,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-    # 'dnn_batch1024':{'epochs':200,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+      # 'dnn_batch128':{'epochs':200,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+      #  'dnn_batch2048':{'epochs':200,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+      'dnn_batch4096':{'epochs':200,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+     #'dnn_batch1024':{'epochs':200,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn_batch8192':{'epochs':200,'batch_size':8192,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
     # 'dnn3l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0]},
@@ -113,9 +113,9 @@ dnnConfigs={
     # 'dnn3l_2p0n_do0p25_batch128':{'epochs':40,'batch_size':128,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch1024':{'epochs':40,'batch_size':1024,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch2048':{'epochs':40,'batch_size':2048,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnn3l_2p0n_do0p25_batch4096':{'epochs':100,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    #'dnn3l_2p0n_do0p25_batch4096':{'epochs':100,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     #'dnn3l_2p0n_do0p25_batch8192':{'epochs':40,'batch_size':8192,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    'dnn5l_1p0n_do0p25':{'epochs':100,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
+    #'dnn5l_1p0n_do0p25':{'epochs':100,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
     #'dnn4l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
     #'dnn2lWide':{'epochs':30,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0]},
         }
