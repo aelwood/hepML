@@ -93,6 +93,7 @@ def compareTrainTest(clf, X_train, y_train, X_test, y_test, output, bins=30,appe
 
     plt.xlabel("Classifier output")
     plt.ylabel("Arbitrary units")
+    plt.yscale('log')
     plt.legend(loc='best')
     if not os.path.exists(output): os.makedirs(output)
     plt.savefig(os.path.join(output,'compareTrainTest'+append+'.pdf'))

@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import math
 import time
-#from dfConvert import convertTree
+from dfConvert import convertTree
 
 from keras import callbacks
 
@@ -21,7 +21,7 @@ from MlClasses.ComparePerformances import ComparePerformances
 from MlFunctions.DnnFunctions import significanceLoss,significanceLossInvert,significanceLoss2Invert,significanceLossInvertSqrt,significanceFull,asimovSignificanceLoss,asimovSignificanceLossInvert,asimovSignificanceFull,truePositive,falsePositive
 
 from linearAlgebraFunctions import gram,addGramToFlatDF
-#from root_numpy import rec2array
+from root_numpy import rec2array
 
 timingFile = open('testPlots/timings.txt','w')
 #Callback to move onto the next batch after stopping
@@ -33,17 +33,19 @@ limitSize=None#100000 #Make this an integer N_events if you want to limit input
 #Use these to calculate the significance when it's used for training
 #Taken from https://twiki.cern.ch/twiki/bin/view/CMS/SummerStudent2017#SUSY
 # (dependent on batch size)
-lumi=300. #luminosity in /fb
-expectedSignal=17.6*0.059*lumi/5 #cross section of stop sample in fb times efficiency measured by Marco
+lumi=30. #luminosity in /fb
+#expectedSignal=17.6*0.059*lumi #cross section of stop sample in fb times efficiency measured by Marco
+expectedSignal=174.599*0.14*lumi #leonid's number
 expectedBkgd=844000.*8.2e-4*lumi #cross section of ttbar sample in fb times efficiency measured by Marco
 systematic=0.1 #systematic for the asimov signficance
 
 makeDfs=False
 saveDfs=True #Save the dataframes if they're remade
+appendInputName='leonid'
 
 makePlots=False
 
-prepareInputs=False
+prepareInputs=True
 addGramMatrix=False
 
 #ML options
@@ -61,7 +63,7 @@ makeHistograms=True
 
 normalLoss=True
 sigLoss=False
-sigLossInvert=False
+sigLossInvert=True
 sigLoss2Invert=False
 sigLossInvertSqrt=False
 asimovSigLoss=False
@@ -113,9 +115,9 @@ dnnConfigs={
     # 'dnn3l_2p0n_do0p25_batch128':{'epochs':40,'batch_size':128,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch1024':{'epochs':40,'batch_size':1024,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn3l_2p0n_do0p25_batch2048':{'epochs':40,'batch_size':2048,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    #'dnn3l_2p0n_do0p25_batch4096':{'epochs':100,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+    #'dnn3l_2p0nIdo0p25_batch4096':{'epochs':200,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     #'dnn3l_2p0n_do0p25_batch8192':{'epochs':40,'batch_size':8192,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
-    #'dnn5l_1p0n_do0p25':{'epochs':100,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
+    #'dnn5l_1p0n_do0p25':{'epochs':200,'batch_size':4096,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
     #'dnn4l_2p0n_do0p25':{'epochs':40,'batch_size':32,'dropOut':0.25,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
     #'dnn2lWide':{'epochs':30,'batch_size':32,'dropOut':0.25,'hiddenLayers':[2.0,2.0]},
         }
@@ -158,7 +160,7 @@ if __name__=='__main__':
         bkgdFile = []#'/nfs/dust/cms/group/susy-desy/marco/training_sample_new/top_sample_0.root'
 
         for i in range(nInputFiles):
-            signalFile.append('/nfs/dust/cms/group/susy-desy/marco/training_sample_new/stop_sample_'+str(i)+'.root')
+            signalFile.append('/nfs/dust/cms/user/dydukhle/DelphesPythia8/Delphes-3.4.1/trainting_samples/stop_samples_'+str(i)+'.root')
             bkgdFile.append('/nfs/dust/cms/group/susy-desy/marco/training_sample_new/top_sample_'+str(i)+'.root')
 
         signal = convertTree(signalFile,signal=True,passFilePath=True,tlVectors = ['selJet','sel_lep'])
@@ -172,13 +174,15 @@ if __name__=='__main__':
             print 'Saving the dataframes'
             # Save the dfs?
             if not os.path.exists('dfs'): os.makedirs('dfs')
-            signal.to_pickle('dfs/signal.pkl')
-            bkgd.to_pickle('dfs/bkgd.pkl')
+            print 'signal size:',len(signal)
+            signal.to_pickle('dfs/signal'+appendInputName+'.pkl')
+            print 'bkgd size:',len(bkgd)
+            bkgd.to_pickle('dfs/bkgd'+appendInputName+'.pkl')
     else:
         print "Loading DataFrames" 
 
-        signal = pd.read_pickle('dfs/signal.pkl')
-        bkgd = pd.read_pickle('dfs/bkgd.pkl')
+        signal = pd.read_pickle('dfs/signal'+appendInputName+'.pkl')
+        bkgd = pd.read_pickle('dfs/bkgd'+appendInputName+'.pkl')
 
     if makePlots:
         print "Making plots" 
@@ -251,11 +255,11 @@ if __name__=='__main__':
 
         if saveDfs:
             print 'Saving prepared files'
-            combined.to_pickle('dfs/combined.pkl')
+            combined.to_pickle('dfs/combined'+appendInputName+'.pkl')
 
     else:
         print 'Reading prepared files'
-        combined = pd.read_pickle('dfs/combined.pkl')
+        combined = pd.read_pickle('dfs/combined'+appendInputName+'.pkl')
 
     #Now carry out machine learning (with some algo specific diagnostics)
     #Choose the variables to train on
