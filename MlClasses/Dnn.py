@@ -461,7 +461,9 @@ class Dnn(object):
             # plt.plot((h1[1][:-1]+h1[1][1:])/2,toPlot+error)
             plt.fill_between((h1[1][:-1]+h1[1][1:])/2,toPlot-error,toPlot+error,linewidth=0,alpha=0.6)
             maxIndex=np.argmax(toPlot)
-            plt.title('asimov significance on test set, syst '+str(systematic)+' best is '+str(round(toPlot[maxIndex],2))+' +/- '+str(round(error[maxIndex],2)))
+            plt.title('Systematic '+str(systematic)+', best significance is '+str(round(toPlot[maxIndex],2))+' +/- '+str(round(error[maxIndex],2)))
+            plt.xlabel('Cut on classifier score')
+            plt.ylabel('Asimov estimate of significance')
             plt.savefig(os.path.join(self.output,'asimovDiscriminatorSyst'+str(systematic).replace('.','p')+'.pdf'))
             plt.clf()
 

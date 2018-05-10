@@ -35,7 +35,7 @@ limitSize=None#100000 #Make this an integer N_events if you want to limit input
 # (dependent on batch size)
 lumi=30. #luminosity in /fb
 #expectedSignal=17.6*0.059*lumi #cross section of stop sample in fb times efficiency measured by Marco
-expectedSignal=174.599*0.14*lumi #leonid's number
+expectedSignal=228.195*0.14*lumi #leonid's number
 expectedBkgd=844000.*8.2e-4*lumi #cross section of ttbar sample in fb times efficiency measured by Marco
 systematic=0.1 #systematic for the asimov signficance
 
@@ -45,7 +45,7 @@ appendInputName='leonid'
 
 makePlots=False
 
-prepareInputs=True
+prepareInputs=False
 addGramMatrix=False
 
 #ML options
