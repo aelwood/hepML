@@ -61,9 +61,9 @@ regressionVars=['MT2W']#,'HT']
 
 makeHistograms=True
 
-normalLoss=True
+normalLoss=False
 sigLoss=False
-sigLossInvert=True
+sigLossInvert=False
 sigLoss2Invert=False
 sigLossInvertSqrt=False
 asimovSigLoss=False
