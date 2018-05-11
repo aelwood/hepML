@@ -3,9 +3,13 @@ import pandas as pd
 import numpy as np
 import os
 import pickle
+import random
 
 from keras.utils import plot_model
 from keras.wrappers.scikit_learn import KerasClassifier
+from keras.models import load_model
+
+from lime import lime_tabular
 
 from MlClasses.PerformanceTests import rocCurve,compareTrainTest,classificationReport,learningCurve,plotPredVsTruth
 from MlClasses.Config import Config
@@ -19,6 +23,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
+
+from asimovErrors import Z,eZ
 
 
 class Dnn(object):
@@ -82,6 +88,11 @@ class Dnn(object):
         for name,val in self.defaultParams.iteritems():
             self.config.addToConfig(name,val)
 
+    def recompileModel(self,loss):
+        '''Recompile the model if you want to change the loss for example'''
+        self.model.compile(loss=loss,
+            optimizer=self.model.optimizer,metrics=self.model.metrics)
+
     def fit(self,epochs=20,batch_size=32,**kwargs):
         '''Fit with training set and validate with test set'''
 
@@ -90,7 +101,6 @@ class Dnn(object):
         self.history = self.model.fit(self.data.X_train.as_matrix(), self.data.y_train.as_matrix(), sample_weight=self.data.weights_train,
                 validation_data=(self.data.X_test.as_matrix(),self.data.y_test.as_matrix(),self.data.weights_test),
                 epochs=epochs, batch_size=batch_size,**kwargs)
-
 
         #Add stuff to the config
         self.config.addLine('Test train split')
@@ -111,7 +121,10 @@ class Dnn(object):
         outF = open(os.path.join(output,'vars.pkl'),'w')
         pickle.dump(self.data.X.columns.values,outF)
         outF.close()
-        
+
+    def load(self,pathToModel,custom_objects=None):
+        '''Load a previously saved model (in h5 format)'''
+        self.model = load_model(pathToModel)
 
     def crossValidation(self,kfolds=3,epochs=20,batch_size=32,n_jobs=4):
         '''K-means cross validation with data standardisation'''
@@ -272,7 +285,7 @@ class Dnn(object):
             plt.ylabel(scoreType)
             plt.xlabel('epoch')
             #do log if a big fractional difference
-            if max(self.history.history[scoreType])>20*min(self.history.history[scoreType]):
+            if max(self.history.history[scoreType])>20*min(self.history.history[scoreType]) and min(self.history.history[scoreType])>0:
                 plt.yscale('log')
             plt.legend(loc='upper left')
             plt.savefig(os.path.join(self.output,scoreType+'Evolution.pdf'))
@@ -284,7 +297,7 @@ class Dnn(object):
         plt.title('model loss')
         plt.ylabel('loss')
         plt.xlabel('epoch')
-        if max(self.history.history['loss'])>20*min(self.history.history['loss']):
+        if max(self.history.history['loss'])>20*min(self.history.history['loss']) and min(self.history.history['loss'])>0:
             plt.yscale('log')
         plt.legend(loc='upper left')
         plt.savefig(os.path.join(self.output,'lossEvolution.pdf'))
@@ -295,7 +308,49 @@ class Dnn(object):
             epochs=epochs, batch_size=batch_size,verbose=0, **self.defaultParams)   
         learningCurve(model,self.data.X_dev.as_matrix(),self.data.y_dev.as_matrix(),self.output,cv=kfolds,n_jobs=n_jobs,scoring=scoring)
 
-    def diagnostics(self,doEvalSet=False,batchSize=32):
+    def explainPredictions(self):
+        '''Use LIME (https://github.com/marcotcr/lime) to give local explanations for the predictions of certain points'''
+
+        explainer = lime_tabular.LimeTabularExplainer(training_data=self.data.X_train.values,  # training data
+                                                   mode='classification',
+                                                   feature_names=list(self.data.X_train),   # names of all features (regardless of type)
+                                                   class_names=['background', 'signal'],            # class names
+                                                   #class_names=[0,1],            # class names
+                                                   discretize_continuous=True,
+                                                   categorical_features= None,
+                                                   categorical_names=None,
+                                                   )
+
+        def predict_fn_keras(x): 
+            if x.ndim>=2:
+                pred=self.model.predict(x,batch_size=1)
+            else:
+                pred=self.model.predict(x.reshape(1,x.shape[-1]),batch_size=1)
+            return np.concatenate((1.-pred,pred),axis=1)
+
+        for i in range(0,10):
+            #len(self.data.X_test)
+            exp = explainer.explain_instance(data_row=self.data.X_test.values[random.randint(0,len(self.data.X_test)-1)],   # 2d numpy array, corresponding to a row
+                                     predict_fn=predict_fn_keras,  # classifier prediction probability function, 
+                                     labels=[1,],               # iterable with labels to be explained.
+                                     num_features=self.data.X_train.shape[1],      # maximum number of features present in explanation
+                                     #top_labels=0,                # explanations for the K labels with highest prediction probabilities,
+                                     #num_samples=2000,            # size of the neighborhood to learn the linear model
+                                     #distance_metric='euclidean'  # the distance metric to use for weights.
+                                     )
+
+            out = os.path.join(self.output,'explanations')
+            if not os.path.exists(out): os.makedirs(out)
+            exp.save_to_file(os.path.join(out,'explanation'+str(i)+'.html'))
+           # print exp.as_pyplot_figure()
+            exp.as_pyplot_figure().savefig(os.path.join(out,'explanation'+str(i)+'.png'))
+        pass
+
+    def diagnostics(self,doEvalSet=False,batchSize=32,subDir=None):
+
+        if subDir:
+            oldOutput = self.output
+            self.output=os.path.join(self.output,subDir)
 
         self.saveConfig()
         self.classificationReport(doEvalSet=doEvalSet,batchSize=batchSize)
@@ -305,6 +360,9 @@ class Dnn(object):
         else:
             self.plotPredVsTruth(doEvalSet=doEvalSet)
         self.plotHistory()
+
+        if subDir:
+            self.output=oldOutput
 
     def testPrediction(self):
         return self.model.predict(self.data.X_test.as_matrix())
@@ -316,7 +374,7 @@ class Dnn(object):
 
         return self.score
 
-    def makeHepPlots(self,expectedSignal,expectedBackground,systematic=0.0001,makeHistograms=True):
+    def makeHepPlots(self,expectedSignal,expectedBackground,systematics=[0.0001],makeHistograms=True,subDir=None,customPrediction=None):
         '''Plots intended for binary signal/background classification
         
             - Plots significance as a function of discriminator output
@@ -325,6 +383,10 @@ class Dnn(object):
             (to be implemented, MlData.referenceVars)
         '''
 
+        if subDir:
+            oldOutput = self.output
+            self.output=os.path.join(self.output,subDir)
+
         if self.doRegression:
             print 'makeHepPlots not implemented for regression'
             return None
@@ -332,14 +394,16 @@ class Dnn(object):
         names = self.data.X.columns.values
 
         #Then predict the results and save them
-        predictionsTest = self.testPrediction()
+        if customPrediction is None:
+            predictionsTest = self.testPrediction()
+        else:
+            predictionsTest = customPrediction
 
         dataTest=pd.DataFrame(self.data.scaler.inverse_transform(self.data.X_test),columns=names)
 
         #Add the predictions and truth to a data frame
         dataTest['truth']=self.data.y_test.as_matrix()
         dataTest['pred']=predictionsTest
-
 
         signalSizeTest = len(dataTest[dataTest.truth==1])
         bkgdSizeTest = len(dataTest[dataTest.truth==0])
@@ -356,11 +420,13 @@ class Dnn(object):
         #dataTest.to_pickle('dataTestSigLoss.pkl')
 
         #Produce a cumulative histogram of signal and background (truth) as a function of score
-        #Plot it with a log scale..
+        #Plot it with a log scTrue
 
-        h1=plt.hist(dataTest[dataTest.truth==0]['pred'],weights=dataTest[dataTest.truth==0]['weight'],bins=50,color='b',alpha=0.8,label='background',cumulative=-1)
-        h2=plt.hist(dataTest[dataTest.truth==1]['pred'],weights=dataTest[dataTest.truth==1]['weight'],bins=50,color='r',alpha=0.8,label='signal',cumulative=-1)
+        h1=plt.hist(dataTest[dataTest.truth==0]['pred'],weights=dataTest[dataTest.truth==0]['weight'],bins=5000,color='b',alpha=0.8,label='background',cumulative=-1)
+        h2=plt.hist(dataTest[dataTest.truth==1]['pred'],weights=dataTest[dataTest.truth==1]['weight'],bins=5000,color='r',alpha=0.8,label='signal',cumulative=-1)
         plt.yscale('log')
+        plt.ylabel('Cumulative event counts / 0.02')
+        plt.xlabel('Classifier output')
         plt.legend()
  
         plt.savefig(os.path.join(self.output,'cumulativeWeightedDiscriminator.pdf'))
@@ -370,7 +436,6 @@ class Dnn(object):
 
         s=h2[0]
         b=h1[0]
-        sigB=systematic*b
 
         plt.plot((h1[1][:-1]+h1[1][1:])/2,s/b)
         plt.title('sig/bkgd on test set')
@@ -378,50 +443,66 @@ class Dnn(object):
         plt.clf()
 
         plt.plot((h1[1][:-1]+h1[1][1:])/2,s/np.sqrt(s+b))
-        plt.title('sig/sqrt(sig+bkgd) on test set')
+        plt.title('sig/sqrt(sig+bkgd) on test set, best is '+str(max(s/np.sqrt(s+b))))
         plt.savefig(os.path.join(self.output,'sensitivityDiscriminator.pdf'))
         plt.clf()
 
-        plt.plot((h1[1][:-1]+h1[1][1:])/2,
-               np.sqrt(2*( (s+b) * np.log( (s+b)*(b+sigB*sigB)/(b*b+(s+b)*sigB*sigB) ) - b*b*np.log( 1+sigB*sigB*s/(b*(b+sigB*sigB)) ) / (sigB*sigB) ))
-                )
-        plt.title('asimov significance on test set, syst '+str(systematic))
-        plt.savefig(os.path.join(self.output,'asimovDiscriminator.pdf'))
-        plt.clf()
+        for systematic in systematics:
+            # sigB=systematic*b
+            #
+            # toPlot=np.sqrt(2*( (s+b) * np.log( (s+b)*(b+sigB*sigB)/(b*b+(s+b)*sigB*sigB) ) - b*b*np.log( 1+sigB*sigB*s/(b*(b+sigB*sigB)) ) / (sigB*sigB) ))
+            #plt.plot((h1[1][:-1]+h1[1][1:])/2,Z(s,b,systematic))
+            toPlot = Z(s,b,systematic)
+            plt.plot((h1[1][:-1]+h1[1][1:])/2,toPlot)
+            es = signalWeightTest*np.sqrt(s/signalWeightTest)
+            eb = bkgdWeightTest*np.sqrt(b/bkgdWeightTest)
+            error=eZ(s,es,b,eb,systematic)
+            # plt.plot((h1[1][:-1]+h1[1][1:])/2,toPlot-error)
+            # plt.plot((h1[1][:-1]+h1[1][1:])/2,toPlot+error)
+            plt.fill_between((h1[1][:-1]+h1[1][1:])/2,toPlot-error,toPlot+error,linewidth=0,alpha=0.6)
+            maxIndex=np.argmax(toPlot)
+            plt.title('Systematic '+str(systematic)+', s: '+s[maxIndex]+', b:'+b[maxIndex]+', best significance is '+str(round(toPlot[maxIndex],2))+' +/- '+str(round(error[maxIndex],2)))
+            plt.xlabel('Cut on classifier score')
+            plt.ylabel('Asimov estimate of significance')
+            plt.savefig(os.path.join(self.output,'asimovDiscriminatorSyst'+str(systematic).replace('.','p')+'.pdf'))
+            plt.clf()
 
-        if makeHistograms: #Do this on the full set
+            if makeHistograms: #Do this on the full set
 
-            #Start with all the data and standardise it
-            if self.data.standardised:
-                data = pd.DataFrame(self.data.scaler.transform(self.data.X))
-                #data = self.data.X.apply(self.data.scaler.transform)
-            else:
-                data = self.data.X
+                #Start with all the data and standardise it
+                if self.data.standardised:
+                    data = pd.DataFrame(self.data.scaler.transform(self.data.X))
+                    #data = self.data.X.apply(self.data.scaler.transform)
+                else:
+                    data = self.data.X
 
-            predictions= self.model.predict(data.as_matrix())
-        
-            #Now unstandardise
-            if self.data.standardised:
-                data=pd.DataFrame(self.data.scaler.inverse_transform(data),columns=names)
+                predictions= self.model.predict(data.as_matrix())
+            
+                #Now unstandardise
+                if self.data.standardised:
+                    data=pd.DataFrame(self.data.scaler.inverse_transform(data),columns=names)
 
-            data['truth']=self.data.y.as_matrix()
-            data['pred']=predictions
+                data['truth']=self.data.y.as_matrix()
+                data['pred']=predictions
 
-            signalSize = len(data[data.truth==1])
-            bkgdSize = len(data[data.truth==0])
-            signalWeight = float(expectedSignal)/signalSize
-            bkgdWeight = float(expectedBackground)/bkgdSize
+                signalSize = len(data[data.truth==1])
+                bkgdSize = len(data[data.truth==0])
+                signalWeight = float(expectedSignal)/signalSize
+                bkgdWeight = float(expectedBackground)/bkgdSize
 
-            data['weight'] = data.apply(lambda row: applyWeight(row,signalWeight,bkgdWeight), axis=1)
+                data['weight'] = data.apply(lambda row: applyWeight(row,signalWeight,bkgdWeight), axis=1)
 
-            #Plot all other interesting variables given classification
-            p = Plotter(data,os.path.join(self.output,'allHists'))
-            p1 = Plotter(data[data.pred>0.5],os.path.join(self.output,'signalPredHists'))
-            p2 = Plotter(data[data.pred<0.5],os.path.join(self.output,'bkgdPredHists'))
+                #Plot all other interesting variables given classification
+                p = Plotter(data,os.path.join(self.output,'allHistsSyst'+str(systematic).replace('.','p')))
+                p1 = Plotter(data[data.pred>float(maxIndex)/len(toPlot)],os.path.join(self.output,'signalPredHistsSyst'+str(systematic).replace('.','p')))
+                p2 = Plotter(data[data.pred<float(maxIndex)/len(toPlot)],os.path.join(self.output,'bkgdPredHistsSyst'+str(systematic).replace('.','p')))
 
-            p.plotAllStackedHists1D('truth',weights='weight',log=True)
-            p1.plotAllStackedHists1D('truth',weights='weight',log=True)
-            p2.plotAllStackedHists1D('truth',weights='weight',log=True)
+                p.plotAllStackedHists1D('truth',weights='weight',log=True)
+                p1.plotAllStackedHists1D('truth',weights='weight',log=True)
+                p2.plotAllStackedHists1D('truth',weights='weight',log=True)
+
+        if subDir:
+            self.output=oldOutput
             
         pass
 
