@@ -161,7 +161,7 @@ if __name__=='__main__':
         bkgdFile = []#'/nfs/dust/cms/group/susy-desy/marco/training_sample_new/top_sample_0.root'
 
         for i in range(nInputFiles):
-            signalFile.append('/nfs/dust/cms/user/dydukhle/DelphesPythia8/Delphes-3.4.1/trainting_samples/stop_samples_'+str(i)+'.root')
+            signalFile.append(' /nfs/dust/cms/group/susy-desy/marco/leonid/stop_600_400/stop_samples_'+str(i)+'.root')
             bkgdFile.append('/nfs/dust/cms/group/susy-desy/marco/training_sample_new/top_sample_'+str(i)+'.root')
 
         signal = convertTree(signalFile,signal=True,passFilePath=True,tlVectors = ['selJet','sel_lep'])
