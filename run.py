@@ -57,7 +57,7 @@ doCrossVal=False
 makeLearningCurve=False
 doGridSearch=False #if this is true do a grid search, if not use the configs
 
-doRegression=False
+doRegression=True
 regressionVars=['MT2W']#,'HT']
 
 makeHistograms=False
