@@ -10,11 +10,7 @@ When installing make sure to initialise and update the submodule:
 
 Start by turning your root trees into numpy arrays! Then carry out some python based data analysis.
 
-For convenience, if you have access to cvmfs and don't want to use tensorflow or keras just use:
-
-  - ```source lcgenv.sh```
-
-Or, for a more complete experience, setup with anaconda:
+Setup with anaconda:
 
  - Install anaconda v4 (I couldn't get it to work with v5) e.g. using
  
@@ -43,10 +39,11 @@ Or, for a more complete experience, setup with anaconda:
    - ```source activate hepML```
 
 
+An example script showing off some of the basic features is available:
 
+  - ```python exampleScript.py``` 
+  
+A more sophisticated script that produced the results in https://arxiv.org/abs/1806.00322 is available:
 
-Set a basic workflow in run.py. Test it with:
-
-  - ```python run.py``` 
-
+  - ```python run.py```
 
