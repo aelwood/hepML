@@ -77,6 +77,46 @@ def createDenseModel(inputSize=None,outputSize=None,hiddenLayers=[1.0],dropOut=N
 
     return model
 
+def createAutoencoderModel(inputSize=None,hiddenLayers=[30,10,30],dropOut=None,l2Regularization=None,activation='relu',optimizer='adam',loss='mean_squared_error',extraMetrics=[]):
+    '''
+    Dropout: choose percentage to be dropped out on each hidden layer (not currently applied to input layer)
+    l2Regularization: choose lambda of the regularization (ie multiplier of the penalty)
+    '''
+
+    #check inputs are ok
+    assert len(hiddenLayers)>=1, 'Need at least one hidden layer'
+
+    #Initialise the model
+    model = Sequential()
+
+    if l2Regularization: 
+        regularization=regularizers.l2(l2Regularization)
+    else:
+        regularization=None
+
+    #Add the first layer, taking the inputs
+    model.add(Dense(units=findLayerSize(hiddenLayers[0],inputSize), 
+        activation=activation, input_dim=inputSize,name='input',
+        kernel_regularizer=regularization))
+
+    if dropOut: model.add(Dropout(dropOut))
+
+    #Add the extra hidden layers
+    for layer in hiddenLayers[1:]:
+        model.add(Dense(units=findLayerSize(hiddenLayers[0],inputSize), 
+            activation=activation,kernel_regularizer=regularization))
+
+        if dropOut: model.add(Dropout(dropOut))
+
+    #Now mirror the input for the output
+    model.add(Dense(inputSize))
+    model.compile(loss=loss,
+        optimizer=optimizer,metrics=['mean_squared_error']+extraMetrics)
+
+    return model
+
+
+
 def significanceLoss(expectedSignal,expectedBkgd):
     '''Define a loss function that calculates the significance based on fixed
     expected signal and expected background yields for a given batch size'''

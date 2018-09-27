@@ -8,8 +8,12 @@ class MlData(object):
     e.g. Used for splitting into test and evaluation sets'''
     def __init__(self,df,classifier,weights=None):
 
-        self.y = df[classifier]
-        self.X = df.drop(classifier,axis=1)
+        if classifier: 
+            self.y = df[classifier]
+            self.X = df.drop(classifier,axis=1)
+        else: 
+            self.y = np.full(len(df),np.nan) #This is useful for autoencoders for example
+            self.X=df
 
         if weights is not None:
             assert len(weights)==len(self.y), 'Weights must be same size as input'
@@ -109,7 +113,12 @@ class MlData(object):
         self.split(evalSize=evalSize,testSize=testSize,limitSize=limitSize)
         if standardise: self.standardise() #This needs to be done after the split to not leak info into the test set
 
-
+    def makeAutoEncoder(self):
+        '''Run this after the rest of the setup if using an autoencoder'''
+        self.y_train=self.X_train
+        self.y_dev=self.X_dev
+        self.y_test=self.X_test
+        self.y_eval=self.X_eval
 
         
 
