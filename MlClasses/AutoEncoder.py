@@ -70,8 +70,9 @@ class AutoEncoder(Dnn):
         if subDir:
             self.output=oldOutput
 
-    def plotError(self,customPred=False,customData=None,expectedCounts=None):
+    def plotError(self,customPred=False,customData=None,expectedCounts=None,subDir=''):
 
+        output=os.path.join(self.output,subDir)
         data = self.data.X_test.as_matrix()
         append=''
         
@@ -97,15 +98,15 @@ class AutoEncoder(Dnn):
         plt.yscale('log')
         plt.legend()
 
-        if not os.path.exists(self.output): os.makedirs(self.output)
-        plt.savefig(os.path.join(self.output,'error'+append+'.pdf'))
+        if not os.path.exists(output): os.makedirs(output)
+        plt.savefig(os.path.join(output,'error'+append+'.pdf'))
         plt.clf()
 
         #Also make a ROC curve to show separation power
         if customPred:
             y_pred = np.concatenate((mse,mseCustom))
             y_true= np.concatenate((np.zeros(len(mse)),np.ones(len(mseCustom))))
-            rocCurve(y_pred,y_true,self.output)
+            rocCurve(y_pred,y_true,output)
 
             if expectedCounts is not None:
                 assert len(expectedCounts)==2,'Need exactly two sets of expected counts'
@@ -123,7 +124,7 @@ class AutoEncoder(Dnn):
                 plt.ylabel('Cumulative event counts / 0.02')
                 plt.xlabel('Classifier output')
                 plt.legend()
-                plt.savefig(os.path.join(self.output,'cumulativeWeightedDiscriminator.pdf'))
+                plt.savefig(os.path.join(output,'cumulativeWeightedDiscriminator.pdf'))
                 plt.clf()
 
                 s=h2[0]
@@ -131,12 +132,12 @@ class AutoEncoder(Dnn):
 
                 plt.plot((h1[1][:-1]+h1[1][1:])/2,s/b)
                 plt.title('sig/bkgd on test set')
-                plt.savefig(os.path.join(self.output,'sigDivBkgdDiscriminator.pdf'))
+                plt.savefig(os.path.join(output,'sigDivBkgdDiscriminator.pdf'))
                 plt.clf()
 
                 plt.plot((h1[1][:-1]+h1[1][1:])/2,s/np.sqrt(s+b))
                 plt.title('sig/sqrt(sig+bkgd) on test set, best is '+str(max(s/np.sqrt(s+b))))
-                plt.savefig(os.path.join(self.output,'sensitivityDiscriminator.pdf'))
+                plt.savefig(os.path.join(output,'sensitivityDiscriminator.pdf'))
                 plt.clf()
                 systematic=0.1
 
@@ -152,7 +153,7 @@ class AutoEncoder(Dnn):
                 plt.title('Systematic '+str(systematic)+', s: '+str(round(s[maxIndex],1))+', b:'+str(round(b[maxIndex],1))+', best significance is '+str(round(toPlot[maxIndex],2))+' +/- '+str(round(error[maxIndex],2)))
                 plt.xlabel('Cut on classifier score')
                 plt.ylabel('Asimov estimate of significance')
-                plt.savefig(os.path.join(self.output,'asimovDiscriminatorSyst'+str(systematic).replace('.','p')+'.pdf'))
+                plt.savefig(os.path.join(output,'asimovDiscriminatorSyst'+str(systematic).replace('.','p')+'.pdf'))
                 plt.clf()
             
 

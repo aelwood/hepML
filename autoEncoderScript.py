@@ -25,7 +25,7 @@ lumi=30. #luminosity in /fb
 expectedBkgd=844000.*8.2e-4*lumi #cross section of ttbar sample in fb times efficiency measured by Marco
 
 #ttbar background and stop (900,100) 
-# df = pd.read_pickle('/nfs/dust/cms/user/elwoodad/dlNonCms/hepML/dfs/combined.pkl')
+# dfFull = pd.read_pickle('/nfs/dust/cms/user/elwoodad/dlNonCms/hepML/dfs/combined.pkl')
 # expectedSignal=17.6*0.059*lumi #cross section of stop sample in fb times efficiency measured by Marco
 
 #ttbar background and stop (600,400) 
@@ -125,7 +125,7 @@ dnnC = AutoEncoder(mlDataC,os.path.join(output,'autoEncoder')) #give it the data
 #build a 2 hidden layer model with 50 neurons each layer
 #Note: if the number of neurons is a float it treats it as a proportion of the input
 # loss is binary cross entropy and one sigmoid neuron is used for output
-dnnC.setup(hiddenLayers=[50,20,5,20,50],dropOut=None,l2Regularization=None,loss='mean_squared_error') 
+dnnC.setup(hiddenLayers=[20,10,3,10,20],dropOut=None,l2Regularization=None,loss='mean_squared_error') 
 
 #fit the defined network with the data passed to it
 #define an early stopping if the loss stops decreasing after 2 epochs
@@ -143,7 +143,24 @@ dfSig = dfSig[subset]
 dfSig = dfSig.sample(len(mlDataC.X_test),random_state=41)
 dfSig=dfSig.fillna(0)
 dfSig= mlDataC.scaler.transform(dfSig)
-dnnC.plotError(customPred=True,customData=dfSig,expectedCounts=[expectedBkgd,expectedSignal])
+dnnC.plotError(customPred=True,customData=dfSig,expectedCounts=[expectedBkgd,expectedSignal],subDir='compressed')
+
+#and again for the uncompressed model
+dfSig = pd.read_pickle('/nfs/dust/cms/user/elwoodad/dlNonCms/hepML/dfs/combined.pkl')
+expectedSignal=17.6*0.059*lumi #cross section of stop sample in fb times efficiency measured by Marco
+dfSig = dfSig[dfSig['signal']==1]
+dfSig = dfSig[subset]
+dfSig = dfSig.sample(len(mlDataC.X_test),random_state=41)
+if makeAnglesRelative:
+    #Make everything relative to MET Phi
+    for k in dfSig.keys():
+        if 'phi' in k:
+            dfSig[k]=np.mod(dfSig[k]-dfSig['METPhi'],2*np.pi)
+        pass
+    pass
+dfSig=dfSig.fillna(0)
+dfSig= mlDataC.scaler.transform(dfSig)
+dnnC.plotError(customPred=True,customData=dfSig,expectedCounts=[expectedBkgd,expectedSignal],subDir='uncompressed')
 
 ## hep specific plots including sensitivity estimates with a flat systematic etc: 
 #print '\nMaking HEP plots'
