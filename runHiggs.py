@@ -23,9 +23,9 @@ from MlFunctions.DnnFunctions import significanceLoss,significanceLossInvert,sig
 from linearAlgebraFunctions import gram,addGramToFlatDF
 
 #Callback to move onto the next batch after stopping
-earlyStopping = callbacks.EarlyStopping(monitor='val_loss',min_delta=0,patience=2)
+earlyStopping = callbacks.EarlyStopping(monitor='val_loss',min_delta=0,patience=3)
 
-limitSize=100000 #Make this an integer N_events if you want to limit input
+limitSize=None#10000 #Make this an integer N_events if you want to limit input
 
 systematic=0.2 #systematic for the asimov signficance
 
@@ -50,8 +50,9 @@ sigLossInvert=False
 sigLoss2Invert=False
 asimovSigLoss=False
 asimovSigLossInvert=False
-asimovSigLossBothInvert=True
-asimovSigLossSysts=[0.01,0.05,0.1,0.2,0.3,0.4,0.5]
+asimovSigLossBothInvert=False
+#asimovSigLossSysts=[0.01,0.05,0.1,0.2,0.3,0.4,0.5]
+asimovSigLossSysts=[0.1,0.3,0.5]
 variableBatchSigLossInvert=False
 
 #If not doing the grid search
@@ -68,7 +69,7 @@ dnnConfigs={
     # 'dnn5l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
     # 'dnn_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0]},
     # 'dnn2l_2p0n':{'epochs':50,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0]},
-    # 'dnn3l_2p0n':{'epochs':50,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
+     'dnn3l_2p0n':{'epochs':200,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn4l_2p0n':{'epochs':50,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
     # 'dnn5l_2p0n':{'epochs':50,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0,2.0]},
 
@@ -157,9 +158,18 @@ if __name__=='__main__':
     #The physical weights are the number of expected counts in the experiment
     #The ML weights take the relative weighting of the physical weights, but weight to the total number
     physicalWeights=combined['Weight']
+
     expectedSignal=combined[combined.signal==1]['Weight'].sum()
     expectedBkgd=combined[combined.signal==0]['Weight'].sum()
-    mlWeights=combined['Weight']*len(combined)/combined['Weight'].sum()
+
+    nSignal=len(combined[combined.signal==1])
+    nBkgd=len(combined[combined.signal==0])
+
+    #Dictionary to store the ratio for the weights
+    rDict={1:float(nSignal)/expectedSignal,0:float(nBkgd)/expectedBkgd}
+
+    mlWeights=combined['Weight']*combined['signal'].map(rDict)
+
     combined=combined.drop('Weight',axis=1)
 
     if makePlots:
@@ -216,7 +226,8 @@ if __name__=='__main__':
 
         print 'Splitting up data'
 
-        mlData = MlData(combinedToRun,'signal')#,weights=mlWeights.as_matrix())
+        #print mlWeights
+        mlData = MlData(combinedToRun,'signal',weights=mlWeights.as_matrix())
 
         #Now split pseudorandomly into training and testing
         #Split the development set into training and testing

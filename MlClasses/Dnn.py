@@ -404,12 +404,15 @@ class Dnn(object):
         #Add the predictions and truth to a data frame
         dataTest['truth']=self.data.y_test.as_matrix()
         dataTest['pred']=predictionsTest
-        dataTest['weight']=self.data.weights_test
 
-        signalSizeTest = dataTest[dataTest.truth==1]['weight'].sum()
-        bkgdSizeTest = dataTest[dataTest.truth==0]['weight'].sum()
-        #signalSizeTest = len(dataTest[dataTest.truth==1])
-        #bkgdSizeTest = len(dataTest[dataTest.truth==0])
+        if self.data.weights_test is not None:
+            dataTest['weight']=self.data.weights_test
+
+            signalSizeTest = dataTest[dataTest.truth==1]['weight'].sum()
+            bkgdSizeTest = dataTest[dataTest.truth==0]['weight'].sum()
+        else:
+            signalSizeTest = len(dataTest[dataTest.truth==1])
+            bkgdSizeTest = len(dataTest[dataTest.truth==0])
         signalWeightTest = float(expectedSignal)/signalSizeTest
         bkgdWeightTest = float(expectedBackground)/bkgdSizeTest
 
@@ -419,7 +422,18 @@ class Dnn(object):
 
         #dataTest['weight'] = dataTest.apply(lambda row: applyWeight(row,signalWeightTest,bkgdWeightTest), axis=1)
         dataTest['weightFactors'] = dataTest.apply(lambda row: applyWeight(row,signalWeightTest,bkgdWeightTest), axis=1)
-        dataTest['weight'] = dataTest['weight']*dataTest['weightFactors']
+        
+        if self.data.weights_test is not None:
+            #print dataTest[['weight','truth']]
+            dataTest['weight'] = dataTest['weight']*dataTest['weightFactors']
+            #print dataTest[['weight','weightFactors','truth']]
+        else:
+            dataTest['weight'] = dataTest['weightFactors']
+
+        print 'Testing, pairs should be equal:'
+        print expectedSignal,dataTest[dataTest.truth==1]['weight'].sum()
+        print expectedBackground,dataTest[dataTest.truth==0]['weight'].sum()
+        print expectedSignal+expectedBackground,dataTest['weight'].sum()
 
         #save it for messing about
         #dataTest.to_pickle('dataTestSigLoss.pkl')

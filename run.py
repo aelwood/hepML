@@ -34,15 +34,15 @@ limitSize=None#100000 #Make this an integer N_events if you want to limit input
 #Taken from https://twiki.cern.ch/twiki/bin/view/CMS/SummerStudent2017#SUSY
 # (dependent on batch size)
 lumi=30. #luminosity in /fb
-expectedSignal=17.6*0.059*lumi #cross section of stop sample in fb times efficiency measured by Marco
-#expectedSignal=228.195*0.14*lumi #leonid's number
+#expectedSignal=17.6*0.059*lumi #cross section of stop sample in fb times efficiency measured by Marco
+expectedSignal=228.195*0.14*lumi #leonid's number
 expectedBkgd=844000.*8.2e-4*lumi #cross section of ttbar sample in fb times efficiency measured by Marco
 systematic=0.1 #systematic for the asimov signficance
 
 makeDfs=False
 saveDfs=True #Save the dataframes if they're remade
-#appendInputName='leonid'
-appendInputName=''
+appendInputName='leonid'
+#appendInputName=''
 
 makePlots=False
 
@@ -57,7 +57,7 @@ doCrossVal=False
 makeLearningCurve=False
 doGridSearch=False #if this is true do a grid search, if not use the configs
 
-doRegression=True
+doRegression=False
 regressionVars=['MT2W']#,'HT']
 
 makeHistograms=False
@@ -70,7 +70,8 @@ sigLossInvertSqrt=False
 asimovSigLoss=False
 asimovSigLossInvert=False
 asimovSigLossBothInvert=True
-asimovSigLossSysts=[0.01,0.05,0.1,0.2,0.3,0.4,0.5]
+#asimovSigLossSysts=[0.01,0.05,0.1,0.2,0.3,0.4,0.5]
+asimovSigLossSysts=[0.1,0.3,0.5]
 crossEntropyFirst=False
 variableBatchSigLossInvert=False
 
