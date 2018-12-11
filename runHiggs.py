@@ -24,8 +24,10 @@ from linearAlgebraFunctions import gram,addGramToFlatDF
 
 #Callback to move onto the next batch after stopping
 earlyStopping = callbacks.EarlyStopping(monitor='val_loss',min_delta=0,patience=3)
+callbacks=[earlyStopping]
+#callbacks=None
 
-limitSize=None#10000 #Make this an integer N_events if you want to limit input
+limitSize=None#100000 #Make this an integer N_events if you want to limit input
 
 systematic=0.2 #systematic for the asimov signficance
 
@@ -45,22 +47,20 @@ regressionVars=['MT2W']#,'HT']
 makeHistograms=False
 
 normalLoss=True
-sigLoss=False
-sigLossInvert=False
-sigLoss2Invert=False
-asimovSigLoss=False
-asimovSigLossInvert=False
-asimovSigLossBothInvert=False
+sigLoss2Invert=True
+asimovSigLossBothInvert=True
 #asimovSigLossSysts=[0.01,0.05,0.1,0.2,0.3,0.4,0.5]
+weightsInLoss=True
 asimovSigLossSysts=[0.1,0.3,0.5]
-variableBatchSigLossInvert=False
+
+comparePerformances=False
 
 #If not doing the grid search
 dnnConfigs={
     #'dnn':{'epochs':100,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
       # 'dnn_batch128':{'epochs':200,'batch_size':128,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-      #  'dnn_batch2048':{'epochs':200,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
-      'dnn_batch4096':{'epochs':200,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+      # 'dnn_batch2048':{'epochs':200,'batch_size':2048,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
+      # 'dnn_batch4096':{'epochs':50,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
      #'dnn_batch1024':{'epochs':200,'batch_size':1024,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn_batch8192':{'epochs':200,'batch_size':8192,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0]},
     # 'dnn2l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0]},
@@ -69,9 +69,10 @@ dnnConfigs={
     # 'dnn5l':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[1.0,1.0,1.0,1.0,1.0]},
     # 'dnn_2p0n':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0]},
     # 'dnn2l_2p0n':{'epochs':50,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0]},
+
      'dnn3l_2p0n':{'epochs':200,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0]},
     # 'dnn4l_2p0n':{'epochs':50,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0]},
-    # 'dnn5l_2p0n':{'epochs':50,'batch_size':32,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0,2.0]},
+     'dnn5l_2p0n':{'epochs':50,'batch_size':4096,'dropOut':None,'l2Regularization':None,'hiddenLayers':[2.0,2.0,2.0,2.0,2.0]},
 
     # 'dnn_l2Reg0p01':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':0.1,'hiddenLayers':[1.0]},
     # 'dnn2l_l2Reg0p01':{'epochs':40,'batch_size':32,'dropOut':None,'l2Regularization':0.1,'hiddenLayers':[1.0,1.0]},
@@ -169,6 +170,10 @@ if __name__=='__main__':
     rDict={1:float(nSignal)/expectedSignal,0:float(nBkgd)/expectedBkgd}
 
     mlWeights=combined['Weight']*combined['signal'].map(rDict)
+    ###TESTING
+    # combined['Weight']=1
+    # mlWeights=combined['Weight']
+    ##
 
     combined=combined.drop('Weight',axis=1)
 
@@ -316,7 +321,7 @@ if __name__=='__main__':
                                     significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
                                     asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
                                     ])
-                        dnn.fit(epochs=config['epochs'],batch_size=128,callbacks=[earlyStopping])
+                        dnn.fit(epochs=config['epochs'],batch_size=128,callbacks=callbacks)
                         dnn.save()
                         if doCrossVal:
                             print ' > Carrying out cross validation'
@@ -332,88 +337,24 @@ if __name__=='__main__':
 
                         trainedModels[varSetName+'_'+name]=dnn
 
-                    if sigLoss:
-
-                        print 'Defining and fitting DNN with significance loss function',name
-                        dnn = Dnn(mlData,'higgsPlots/mlPlots/sigLoss/'+varSetName+'/'+name)
-                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
-                                loss=significanceLoss(expectedSignal,expectedBkgd),
-                                extraMetrics=[
-                                    significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
-                                    asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
-                                ])
-                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'],callbacks=[earlyStopping])
-                        dnn.save()
-                        print ' > Producing diagnostics'
-                        #dnn.explainPredictions()
-                        dnn.diagnostics(batchSize=8192)
-                        dnn.makeHepPlots(expectedSignal,expectedBkgd,asimovSigLossSysts,makeHistograms=makeHistograms)
-
-                        trainedModels[varSetName+'_sigLoss_'+name]=dnn
-
-                    if sigLossInvert:
-
-                        print 'Defining and fitting DNN with significance loss function',name
-                        dnn = Dnn(mlData,'higgsPlots/mlPlots/sigLossInvert/'+varSetName+'/'+name)
-                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
-                                loss=significanceLossInvert(expectedSignal,expectedBkgd),
-                                extraMetrics=[
-                                    significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
-                                    asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
-                                ])
-                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'],callbacks=[earlyStopping])
-                        dnn.save()
-                        print ' > Producing diagnostics'
-                        dnn.diagnostics(batchSize=8192)
-                        dnn.makeHepPlots(expectedSignal,expectedBkgd,asimovSigLossSysts,makeHistograms=makeHistograms)
-
-                        trainedModels[varSetName+'_sigLossInvert_'+name]=dnn
-
                     if sigLoss2Invert:
 
                         print 'Defining and fitting DNN with significance loss function',name
                         dnn = Dnn(mlData,'higgsPlots/mlPlots/sigLoss2Invert/'+varSetName+'/'+name)
                         dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
-                                loss=significanceLoss2Invert(expectedSignal,expectedBkgd),
+                                loss=significanceLoss2Invert(expectedSignal,expectedBkgd,weights=weightsInLoss),
                                 extraMetrics=[
                                     significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
-                                    asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
-                                ])
-                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'],callbacks=[earlyStopping])
-                        dnn.save()
+                                    asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive],
+                                weightsInLoss=weightsInLoss)
+                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'],callbacks=callbacks)
+                        #dnn.save()
                         print ' > Producing diagnostics'
                         dnn.diagnostics(batchSize=8192)
                         dnn.makeHepPlots(expectedSignal,expectedBkgd,asimovSigLossSysts,makeHistograms=makeHistograms)
 
                         trainedModels[varSetName+'_sigLoss2Invert_'+name]=dnn
 
-
-                    if asimovSigLossInvert:
-
-                        #First set up a model that trains on the sig loss
-                        print 'Defining and fitting DNN with inverted asimov significance loss function',name
-                        dnn = Dnn(mlData,'higgsPlots/mlPlots/asimovSigLossInvert/'+varSetName+'/'+name)
-                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
-                                loss=significanceLoss(expectedSignal,expectedBkgd),
-                                extraMetrics=[
-                                    asimovSignificanceLossInvert(expectedSignal,expectedBkgd,systematic),asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),
-                                    significanceFull(expectedSignal,expectedBkgd),truePositive,falsePositive
-                                ])
-
-                        dnn.fit(epochs=5,batch_size=config['batch_size'])
-                        dnn.diagnostics(batchSize=8192,subDir='pretraining')
-                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms,subDir='pretraining')
-
-                        #Now recompile the model with a different loss and train further
-                        dnn.recompileModel(asimovSignificanceLossInvert(expectedSignal,expectedBkgd,systematic))
-                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'],callbacks=[earlyStopping])
-                        dnn.save()
-                        print ' > Producing diagnostics'
-                        #dnn.explainPredictions()
-                        dnn.diagnostics(batchSize=8192)
-                        dnn.makeHepPlots(expectedSignal,expectedBkgd,[systematic],makeHistograms=makeHistograms)
-
-                        trainedModels[varSetName+'_asimovSigLossInvert_'+name]=dnn
 
                     if asimovSigLossBothInvert:
 
@@ -425,90 +366,32 @@ if __name__=='__main__':
                             print 'Defining and fitting DNN with inverted asimov significance loss function',name
                             dnn = Dnn(mlData,'higgsPlots/mlPlots/asimovSigLossBothInvertSyst'+systName+'/'+varSetName+'/'+name)
                             dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
-                                    loss=significanceLoss2Invert(expectedSignal,expectedBkgd),
+                                    loss=significanceLoss2Invert(expectedSignal,expectedBkgd,weights=weightsInLoss),
                                     extraMetrics=[
                                         asimovSignificanceLossInvert(expectedSignal,expectedBkgd,chosenSyst),asimovSignificanceFull(expectedSignal,expectedBkgd,chosenSyst),
                                         significanceFull(expectedSignal,expectedBkgd),truePositive,falsePositive
-                                    ])
+                                    ],weightsInLoss=weightsInLoss)
 
                             dnn.fit(epochs=5,batch_size=config['batch_size'])
                             dnn.diagnostics(batchSize=8192,subDir='pretraining')
                             dnn.makeHepPlots(expectedSignal,expectedBkgd,[chosenSyst],makeHistograms=makeHistograms,subDir='pretraining')
 
                             #Now recompile the model with a different loss and train further
-                            dnn.recompileModel(asimovSignificanceLossInvert(expectedSignal,expectedBkgd,chosenSyst))
-                            dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'],callbacks=[earlyStopping])
-                            dnn.save()
+                            dnn.recompileModel(asimovSignificanceLossInvert(expectedSignal,expectedBkgd,chosenSyst,weights=weightsInLoss))
+                            dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'],callbacks=callbacks)
+                            #dnn.save()
                             print ' > Producing diagnostics'
                             dnn.diagnostics(batchSize=8192)
                             dnn.makeHepPlots(expectedSignal,expectedBkgd,[chosenSyst],makeHistograms=makeHistograms)
 
                             trainedModels[varSetName+'_asimovSigLossBothInvert_'+name+systName]=dnn
 
-                    if asimovSigLoss:
-
-                        print 'Defining and fitting DNN with asimov significance loss function',name
-                        dnn = Dnn(mlData,'higgsPlots/mlPlots/asimovSigLoss/'+varSetName+'/'+name)
-
-                        #First set up a model that trains on the sig loss
-                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
-                                loss=significanceLoss(expectedSignal,expectedBkgd),
-                                extraMetrics=[
-                                    asimovSignificanceLoss(expectedSignal,expectedBkgd,systematic),asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),
-                                    significanceFull(expectedSignal,expectedBkgd),truePositive,falsePositive
-                                ])
-
-                        dnn.fit(epochs=5,batch_size=config['batch_size'])
-                        dnn.diagnostics(batchSize=8192,subDir='pretraining')
-                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms,subDir='pretraining')
-
-                        #Now recompile the model with a different loss and train further
-                        dnn.recompileModel(asimovSignificanceLoss(expectedSignal,expectedBkgd,systematic))
-                        dnn.fit(epochs=config['epochs'],batch_size=config['batch_size'])
-                        dnn.save()
-                        print ' > Producing diagnostics'
-                        dnn.diagnostics(batchSize=8192)
-                        dnn.makeHepPlots(expectedSignal,expectedBkgd,[systematic],makeHistograms=makeHistograms)
-
-                        trainedModels[varSetName+'_asimovSigLoss_'+name]=dnn
-
-                    if variableBatchSigLossInvert:
-
-                        print 'Defining and fitting DNN with significance loss function',name
-                        timingFile.write('\nTiming variable batch, with DNN '+name)
-                        t0=time.time()
-
-                        dnn = Dnn(mlData,'higgsPlots/mlPlots/variableBatchSigLossInvert/'+varSetName+'/'+name)
-
-                        dnn.setup(hiddenLayers=config['hiddenLayers'],dropOut=config['dropOut'],l2Regularization=config['l2Regularization'],
-                                loss=significanceLossInvert(expectedSignal,expectedBkgd),
-                                extraMetrics=[
-                                    significanceLoss(expectedSignal,expectedBkgd),significanceFull(expectedSignal,expectedBkgd),
-                                    asimovSignificanceFull(expectedSignal,expectedBkgd,systematic),truePositive,falsePositive
-                                ])
-
-
-                        for batch_size in [128,512,1024,2048,4096,8192,16384]:
-                            print '\nRunning with batch size '+str(batch_size)
-                            dnn.fit(epochs=100,batch_size=batch_size,callbacks=[earlyStopping])
-                            dnn.diagnostics(batchSize=4096,subDir='batchSize'+str(batch_size))
-
-                        dnn.save()
-                        print ' > Producing diagnostics'
-                        dnn.diagnostics(batchSize=4096)
-                        t1=time.time()
-                        timingFile.write(': '+str(t1-t0)+' s\n')
-                        dnn.makeHepPlots(expectedSignal,expectedBkgd,systematic,makeHistograms=makeHistograms)
-
-                        trainedModels[varSetName+'_variableBatchSigLossInvert_'+name]=dnn
-        
-
                 pass
 
     pass # end of variable set loop
 
     #Compare all the results
-    if not doGridSearch and not doRegression:
+    if comparePerformances:
 
         # #Now compare all the different versions
         compareMl = ComparePerformances(trainedModels,output='higgsPlots/mlPlots/comparisons')

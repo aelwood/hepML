@@ -13,7 +13,7 @@ from lime import lime_tabular
 
 from MlClasses.PerformanceTests import rocCurve,compareTrainTest,classificationReport,learningCurve,plotPredVsTruth
 from MlClasses.Config import Config
-from MlFunctions.DnnFunctions import createDenseModel
+from MlFunctions.DnnFunctions import createDenseModel,wrapped_partial
 
 from pandasPlotting.Plotter import Plotter
 
@@ -46,7 +46,7 @@ class Dnn(object):
         else:
             self.scoreTypes = ['acc']
 
-    def setup(self,hiddenLayers=[1.0],dropOut=None,l2Regularization=None,loss=None,extraMetrics=[]):
+    def setup(self,hiddenLayers=[1.0],dropOut=None,l2Regularization=None,loss=None,extraMetrics=[],weightsInLoss=False):
 
         '''Setup the neural net. Input a list of hiddenlayers
         if you fill float takes as fraction of inputs+outputs
@@ -72,12 +72,19 @@ class Dnn(object):
             activation='relu',optimizer='adam',
             doRegression=self.doRegression
             )
-        self.model=createDenseModel(loss=loss,extraMetrics=extraMetrics,**self.defaultParams)
-        for em in extraMetrics:
-            if isinstance(em,str): 
-                self.scoreTypes.append(em)
-            else:
-                self.scoreTypes.append(em.__name__)
+
+        #Have to remove the metrics if including weights in the loss function (for asimov loss)
+        self.weightsInLoss=weightsInLoss
+        if weightsInLoss:
+            self.model,self.weightsTensor=createDenseModel(loss=loss,weightsInLoss=weightsInLoss,**self.defaultParams)
+            self.scoreTypes=[]
+        else:
+            self.model=createDenseModel(loss=loss,extraMetrics=extraMetrics+self.scoreTypes,**self.defaultParams)
+            for em in extraMetrics:
+                if isinstance(em,str): 
+                    self.scoreTypes.append(em)
+                else:
+                    self.scoreTypes.append(em.__name__)
 
         #Add stuff to the config
         self.config.addToConfig('Vars used',self.data.X.columns.values)
@@ -90,15 +97,36 @@ class Dnn(object):
 
     def recompileModel(self,loss):
         '''Recompile the model if you want to change the loss for example'''
-        self.model.compile(loss=loss,
-            optimizer=self.model.optimizer,metrics=self.model.metrics)
+        if not self.weightsInLoss:
+            self.model.compile(loss=loss,
+                optimizer=self.model.optimizer,metrics=self.model.metrics)
+        else:
+            closs=wrapped_partial(loss,weights=self.weightsTensor)
+            self.model.compile(loss=closs,
+                optimizer=self.model.optimizer,metrics=self.model.metrics)
 
     def fit(self,epochs=20,batch_size=32,**kwargs):
         '''Fit with training set and validate with test set'''
 
         #Fit the model and save the history for diagnostics
         #additionally pass the testing data for further diagnostic results
-        self.history = self.model.fit(self.data.X_train.as_matrix(), self.data.y_train.as_matrix(), sample_weight=self.data.weights_train,
+        if self.weightsInLoss:
+            
+            # t=np.transpose(np.vstack((self.data.y_train.as_matrix(),self.data.weights_train)))
+            # print t
+            # print t[:,0]
+            # print t[:,1]
+            # exit()
+            #pass the weights packaged with y_true
+            self.history = self.model.fit([self.data.X_train.as_matrix(), self.data.weights_train],
+                    #np.transpose(np.vstack((self.data.y_train.as_matrix(),self.data.weights_train))),
+                    self.data.y_train.as_matrix(),
+                validation_data=([self.data.X_test.as_matrix(),self.data.weights_test],
+                    #np.transpose(np.vstack((self.data.y_test.as_matrix(),self.data.weights_test)))),
+                    self.data.y_test.as_matrix()),
+                epochs=epochs, batch_size=batch_size,**kwargs)
+        else:
+            self.history = self.model.fit(self.data.X_train.as_matrix(), self.data.y_train.as_matrix(), sample_weight=self.data.weights_train,
                 validation_data=(self.data.X_test.as_matrix(),self.data.y_test.as_matrix(),self.data.weights_test),
                 epochs=epochs, batch_size=batch_size,**kwargs)
 
@@ -214,26 +242,45 @@ class Dnn(object):
             weights_train=self.data.weights_train
             append=''
 
+        # if self.weightsInLoss:
+        #     y_testForModel=np.transpose(np.vstack((y_test.as_matrix(),weights_test)))
+        #     y_trainForModel=np.transpose(np.vstack((y_train.as_matrix(),weights_train)))
+        # else:
+        #     y_testForModel=y_test.as_matrix()
+        #     y_trainForModel=y_train.as_matrix()
+
         if not os.path.exists(self.output): os.makedirs(self.output)
         f=open(os.path.join(self.output,'classificationReport'+append+'.txt'),'w')
 
         f.write( 'Performance on test set:\n')
-        report = self.model.evaluate(X_test.as_matrix(), y_test.as_matrix(), sample_weight=weights_test, batch_size=batchSize)
+        if self.weightsInLoss:
+            report = self.model.evaluate([X_test.as_matrix(),weights_test], y_test.as_matrix(), sample_weight=weights_test, batch_size=batchSize)
+        else:
+            report = self.model.evaluate(X_test.as_matrix(), y_test.as_matrix(), sample_weight=weights_test, batch_size=batchSize)
         self.score=report
 
         if self.doRegression:
             f.write( '\n\nDNN Loss, Mean Squared Error:\n')
         else:
-            classificationReport(self.model.predict_classes(X_test.as_matrix()),self.model.predict(X_test.as_matrix()),y_test,f)
+            if self.weightsInLoss:
+                classificationReport(np.round(self.model.predict([X_test.as_matrix(),weights_test])),self.model.predict([X_test.as_matrix(),weights_test]),y_test,f)
+            else:
+                classificationReport(np.round(self.model.predict(X_test.as_matrix())),self.model.predict(X_test.as_matrix()),y_test,f)
             f.write( '\n\nDNN Loss, Accuracy, Significance:\n')
         f.write(str(report)) 
 
         f.write( '\n\nPerformance on train set:\n')
-        report = self.model.evaluate(X_train.as_matrix(), y_train.as_matrix(), sample_weight=weights_train, batch_size=batchSize)
+        if self.weightsInLoss:
+            report = self.model.evaluate([X_train.as_matrix(),weights_train], y_train.as_matrix(), sample_weight=weights_train, batch_size=batchSize)
+        else:
+            report = self.model.evaluate(X_train.as_matrix(), y_train.as_matrix(), sample_weight=weights_train, batch_size=batchSize)
         if self.doRegression:
             f.write( '\n\nDNN Loss, Mean Squared Error:\n')
         else:
-            classificationReport(self.model.predict_classes(X_train.as_matrix()),self.model.predict(X_train.as_matrix()),y_train,f)
+            if self.weightsInLoss:
+                classificationReport(np.round(self.model.predict([X_train.as_matrix(),weights_train])),self.model.predict([X_train.as_matrix(),weights_train]),y_train,f)
+            else:
+                classificationReport(np.round(self.model.predict(X_train.as_matrix())),self.model.predict(X_train.as_matrix()),y_train,f)
             f.write( '\n\nDNN Loss, Accuracy, Significance:\n')
         f.write(str(report))
 
@@ -248,29 +295,30 @@ class Dnn(object):
             return None
 
         if doEvalSet:
-            rocCurve(self.model.predict(self.data.X_eval.as_matrix()), self.data.y_eval,self.output,append='_eval')
-            rocCurve(self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,self.output,append='_dev')
+            rocCurve(self.predict(self.data.X_eval.as_matrix(),self.data.weights_eval), self.data.y_eval,self.output,append='_eval')
+            rocCurve(self.predict(self.data.X_train.as_matrix(),self.data.weights_train),self.data.y_train,self.output,append='_dev')
         else:
-            rocCurve(self.model.predict(self.data.X_test.as_matrix()), self.data.y_test,self.output)
-            rocCurve(self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,self.output,append='_train')
+            rocCurve(self.predict(self.data.X_test.as_matrix(),self.data.weights_test), self.data.y_test,self.output)
+            rocCurve(self.predict(self.data.X_train.as_matrix(),self.data.weights_train),self.data.y_train,self.output,append='_train')
 
     def compareTrainTest(self,doEvalSet=False):
 
         if doEvalSet: 
             compareTrainTest(self.model.predict,self.data.X_dev.as_matrix(),self.data.y_dev.as_matrix(),\
-                self.data.X_eval.as_matrix(),self.data.y_eval.as_matrix(),self.output,append='_eval')
+                self.data.X_eval.as_matrix(),self.data.y_eval.as_matrix(),self.output,append='_eval',weightsInLoss=self.weightsInLoss)
         else:
             compareTrainTest(self.model.predict,self.data.X_train.as_matrix(),self.data.y_train.as_matrix(),\
-                self.data.X_test.as_matrix(),self.data.y_test.as_matrix(),self.output)
+                self.data.X_test.as_matrix(),self.data.y_test.as_matrix(),self.output,
+                weightsTrain=self.data.weights_train, weightsTest=self.data.weights_test,weightsInLoss=self.weightsInLoss)
 
     def plotPredVsTruth(self,doEvalSet=False):
 
         if doEvalSet:
-            plotPredVsTruth(self.model.predict(self.data.X_eval.as_matrix()), self.data.y_eval,self.output,append='_eval')
-            plotPredVsTruth(self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,self.output,append='_dev')
+            plotPredVsTruth(self.predict(self.data.X_eval.as_matrix(),self.data.weights_eval), self.data.y_eval,self.output,append='_eval')
+            plotPredVsTruth(self.predict(self.data.X_train.as_matrix(),self.data.weights_train),self.data.y_train,self.output,append='_dev')
         else:
-            plotPredVsTruth(self.model.predict(self.data.X_test.as_matrix()), self.data.y_test,self.output)
-            plotPredVsTruth(self.model.predict(self.data.X_train.as_matrix()),self.data.y_train,self.output,append='_train')
+            plotPredVsTruth(self.predict(self.data.X_test.as_matrix(),self.data.weights_test), self.data.y_test,self.output)
+            plotPredVsTruth(self.predict(self.data.X_train.as_matrix(),self.data.weights_train),self.data.y_train,self.output,append='_train')
 
 
     def plotHistory(self):
@@ -364,8 +412,11 @@ class Dnn(object):
         if subDir:
             self.output=oldOutput
 
-    def testPrediction(self):
-        return self.model.predict(self.data.X_test.as_matrix())
+    def predict(self,X,weights=None):
+        if self.weightsInLoss:
+            return self.model.predict([X,weights])
+        else:
+            return self.model.predict(X)
 
     def getAccuracy(self,batchSize=32):
 
@@ -395,7 +446,7 @@ class Dnn(object):
 
         #Then predict the results and save them
         if customPrediction is None:
-            predictionsTest = self.testPrediction()
+            predictionsTest = self.predict(self.data.X_test.as_matrix(),self.data.weights_test)
         else:
             predictionsTest = customPrediction
 

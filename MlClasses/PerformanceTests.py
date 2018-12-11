@@ -54,12 +54,17 @@ def rocCurve(y_preds,y_test=None,output=None,append=''):
     plt.savefig(os.path.join(output,'rocCurve'+append+'.pdf'))
     plt.clf()
 
-def compareTrainTest(clf, X_train, y_train, X_test, y_test, output, bins=30,append=''):
+def compareTrainTest(clf, X_train, y_train, X_test, y_test, output, bins=30,append='',weightsTrain=None,weightsTest=None,weightsInLoss=False):
     '''Compares the decision function for the train and test BDT'''
     decisions = []
-    for X,y in ((X_train, y_train), (X_test, y_test)):
-        d1 = clf(X[y>0.5]).ravel()
-        d2 = clf(X[y<0.5]).ravel()
+    for X,y,w in ((X_train, y_train,weightsTrain), (X_test, y_test,weightsTest)):
+        print w
+        if not weightsInLoss:
+            d1 = clf(X[y>0.5]).ravel()
+            d2 = clf(X[y<0.5]).ravel()
+        else:
+            d1 = clf([X[y>0.5],w[y>0.5]]).ravel()
+            d2 = clf([X[y<0.5],w[y<0.5]]).ravel()
         decisions += [d1, d2]
         
     low = min(np.min(d) for d in decisions)
